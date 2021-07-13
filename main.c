@@ -48,7 +48,7 @@ void main(void)
     INTERRUPT_GlobalInterruptEnable();
     INTERRUPT_PeripheralInterruptEnable();
     
-    SLEEP();
+    //SLEEP();
     
     while (1)
     {
