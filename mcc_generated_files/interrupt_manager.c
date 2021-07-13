@@ -52,7 +52,11 @@
 void __interrupt() INTERRUPT_InterruptManager (void)
 {
     // interrupt handler
-    if(PIE0bits.IOCIE == 1 && PIR0bits.IOCIF == 1)
+    if(PIE0bits.TMR0IE == 1 && PIR0bits.TMR0IF == 1)
+    {
+        TMR0_ISR();
+    }
+    else if(PIE0bits.IOCIE == 1 && PIR0bits.IOCIF == 1)
     {
         PIN_MANAGER_IOC();
     }
@@ -66,10 +70,6 @@ void __interrupt() INTERRUPT_InterruptManager (void)
         {
             EUSART_RxDefaultInterruptHandler();
         } 
-        else if(PIE2bits.TMR6IE == 1 && PIR2bits.TMR6IF == 1)
-        {
-            TMR6_ISR();
-        } 
         else if(PIE1bits.BCL1IE == 1 && PIR1bits.BCL1IF == 1)
         {
             MSSP1_InterruptHandler();
@@ -77,6 +77,10 @@ void __interrupt() INTERRUPT_InterruptManager (void)
         else if(PIE1bits.SSP1IE == 1 && PIR1bits.SSP1IF == 1)
         {
             MSSP1_InterruptHandler();
+        } 
+        else if(PIE1bits.TMR1IE == 1 && PIR1bits.TMR1IF == 1)
+        {
+            TMR1_ISR();
         } 
         else
         {
