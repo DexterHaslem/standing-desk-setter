@@ -63,7 +63,7 @@ void main(void)
         printf("device id: 0x%04X\n", device_id);
     }
     
-    SLEEP();
+    //SLEEP();
     
     vl53l1x_start_ranging();
     
@@ -81,7 +81,7 @@ void main(void)
             //printf("\rdist = %hu mm       \r", dist);
         }
         
-        __delay_ms(25);
+        __delay_ms(33);
     }
     
     vl53l1x_stop_ranging();
