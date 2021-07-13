@@ -51,15 +51,20 @@ void main(void)
    
     __delay_ms(25);
     
-    vl53l1x_init();
-    
-    __delay_ms(25);
+    bool sensor_init = vl53l1x_init();
+    if (!sensor_init)
+    {
+        printf("failed to init sensor\r\n");
+    }
     
     while (1)
     {
         //SLEEP();
-        uint16_t device_id = vl53l1x_get_id();
-        printf("device id: 0x%04X\n", device_id);
+        if (sensor_init)
+        {
+            uint16_t device_id = vl53l1x_get_id();
+            printf("device id: 0x%04X\n", device_id);
+        }
         __delay_ms(3000);
     }
 }
