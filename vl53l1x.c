@@ -223,9 +223,9 @@ void vl53l1x_stop_ranging(void)
 uint8_t vl53l1x_get_data_ready(void)
 {
     /* 0x0031 */
-    //uint8_t pol = vl53l1x_get_int_polarity();   
+    uint8_t pol = vl53l1x_get_int_polarity();   
     uint8_t tmp = read1_reg2(0x0031);
-    uint8_t data_ready = (tmp & 1) == 1;// == pol;
+    uint8_t data_ready = (tmp & 1) == pol;
     return data_ready;
 }
 
@@ -237,7 +237,8 @@ bool vl53l1x_init(void)
     /* bit of a doozy to initialize the sensor */
     for (uint8_t reg_addr = 0x2d; reg_addr <= 0x87; ++reg_addr)
     {
-        I2C1_Write1ByteRegister(I2C_ADDR, reg_addr, default_cfgs[reg_addr - 0x2d]);
+        //I2C1_Write1ByteRegister(I2C_ADDR, reg_addr, default_cfgs[reg_addr - 0x2d]);
+        write1_reg2(reg_addr, default_cfgs[reg_addr - 0x2d]);
     }
     
     vl53l1x_start_ranging();
@@ -254,7 +255,7 @@ bool vl53l1x_init(void)
     vl53l1x_stop_ranging();
     
     write1_reg2(0x0008, 0x09); /* two bounds vhv */
-    I2C1_Write1ByteRegister(I2C_ADDR, 0x0b, 0);  /* start vhv from prev temp */
+    write1_reg2(0x000b, 0x00); /* start vhv from prev temp */
     return true;
 }
 
@@ -262,4 +263,11 @@ uint16_t vl53l1x_get_id(void)
 {
     uint16_t ret = read2_reg2(0x010f);
     return ret;
+}
+
+//VL53L1_RESULT__FINAL_CROSSTALK_CORRECTED_RANGE_MM_SD0
+uint16_t vl53l1x_get_dist(void)
+{
+    uint16_t dist = read2_reg2(0x0096);
+    return dist;
 }
