@@ -58,7 +58,15 @@ void __interrupt() INTERRUPT_InterruptManager (void)
     }
     else if(INTCONbits.PEIE == 1)
     {
-        if(PIE2bits.TMR6IE == 1 && PIR2bits.TMR6IF == 1)
+        if(PIE1bits.TXIE == 1 && PIR1bits.TXIF == 1)
+        {
+            EUSART_TxDefaultInterruptHandler();
+        } 
+        else if(PIE1bits.RCIE == 1 && PIR1bits.RCIF == 1)
+        {
+            EUSART_RxDefaultInterruptHandler();
+        } 
+        else if(PIE2bits.TMR6IE == 1 && PIR2bits.TMR6IF == 1)
         {
             TMR6_ISR();
         } 
