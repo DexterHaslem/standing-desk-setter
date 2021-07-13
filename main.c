@@ -49,12 +49,16 @@ void main(void)
     INTERRUPT_GlobalInterruptEnable();
     INTERRUPT_PeripheralInterruptEnable();
    
-    __delay_ms(25);
+    __delay_ms(5);
     
     bool sensor_init = vl53l1x_init();
     if (!sensor_init)
     {
         printf("failed to init sensor\r\n");
+    }
+    else
+    {
+        printf("sensor initialized\r\n");
     }
     
     while (1)
@@ -72,10 +76,9 @@ void main(void)
             
             uint16_t dist = vl53l1x_get_dist();
             vl53l1x_clear_int();
-            vl53l1x_stop_ranging();
-            
-            printf("raw dist = 0x%04X\r\n", dist);
+            vl53l1x_stop_ranging();            
+            printf("dist = %hu mm\r\n", dist);
         }
-        __delay_ms(2000);
+        __delay_ms(1000);
     }
 }
