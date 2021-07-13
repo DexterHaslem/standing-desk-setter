@@ -59,26 +59,30 @@ void main(void)
     else
     {
         printf("sensor initialized\r\n");
+        uint16_t device_id = vl53l1x_get_id();
+        printf("device id: 0x%04X\n", device_id);
     }
+    
+    SLEEP();
+    
+    vl53l1x_start_ranging();
     
     while (1)
     {
-        //SLEEP();
+        
         if (sensor_init)
-        {
-            //uint16_t device_id = vl53l1x_get_id();
-            //printf("device id: 0x%04X\n", device_id);
-            
-            vl53l1x_start_ranging();
-            
+        { 
             while (vl53l1x_get_data_ready() == 0)
                 __delay_ms(1);
             
             uint16_t dist = vl53l1x_get_dist();
             vl53l1x_clear_int();
-            vl53l1x_stop_ranging();            
-            printf("dist = %hu mm\r\n", dist);
+            
+            //printf("\rdist = %hu mm       \r", dist);
         }
-        __delay_ms(1000);
+        
+        __delay_ms(25);
     }
+    
+    vl53l1x_stop_ranging();
 }
