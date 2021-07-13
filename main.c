@@ -1,6 +1,8 @@
 #include "mcc_generated_files/mcc.h"
 
+#include "vl53l1x.h"
 #include <stdint.h>
+#include <stdio.h>
 #include <stdbool.h>
 
 #define SLEEP_TIMEOUT_MS (5000)
@@ -22,8 +24,7 @@ static void on_heartbeat_timer(void)
     {
         IO_STATUS_LED_SetHigh();
         SLEEP();
-    }
-        
+    }        
 }
 
 static void on_input_pin(void)
@@ -47,11 +48,18 @@ void main(void)
     
     INTERRUPT_GlobalInterruptEnable();
     INTERRUPT_PeripheralInterruptEnable();
+   
+    __delay_ms(25);
     
-    //SLEEP();
+    vl53l1x_init();
+    
+    __delay_ms(25);
     
     while (1)
     {
-        
+        //SLEEP();
+        uint16_t device_id = vl53l1x_get_id();
+        printf("device id: 0x%04X\n", device_id);
+        __delay_ms(3000);
     }
 }
