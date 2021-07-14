@@ -296,6 +296,10 @@ void vl53l1x_set_dist_mode(enum eVL53L1X_DIST_MODE dm)
 {
     if (dm == VL53L1X_DIST_MODE_UNKNOWN)
         return;
+    
+    /* setting new dist mode resets timing budget to default */
+    uint16_t tb = vl53l1x_get_timing_budget_ms();
+    
     bool sr = dm == VL53L1X_DIST_MODE_SHORT;
     write1_reg2(PHASECAL_CONFIG__TIMEOUT_MACROP, sr ? 0x14 : 0x0a);
     write1_reg2(RANGE_CONFIG__VCSEL_PERIOD_A, sr ? 0x07 : 0x0f);
@@ -303,6 +307,9 @@ void vl53l1x_set_dist_mode(enum eVL53L1X_DIST_MODE dm)
     write1_reg2(RANGE_CONFIG__VALID_PHASE_HIGH, sr ? 0x38 : 0xb8);
     write2_reg2(SD_CONFIG__WOI_SD0, sr ? 0x0705 : 0x0f0d);
     write2_reg2(SD_CONFIG__INITIAL_PHASE_SD0, sr ? 0x0606 : 0x0e0e);
+    
+    /* restore previous timing budget */
+    vl53l1x_set_timing_budget_ms(tb);
 }
 
 enum eVL53L1X_DIST_MODE vl53l1x_get_dist_mode(void)
