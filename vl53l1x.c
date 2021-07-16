@@ -358,6 +358,7 @@ uint16_t vl53l1x_get_timing_budget_ms(void)
     return 0;
 }
 
+/* TODO: enum for the magic values */
 void vl53l1x_set_timing_budget_ms(uint16_t tb)
 {
     /* once again for some mysterious reason, magic numbers in registers depending 

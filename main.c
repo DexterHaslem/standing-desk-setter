@@ -65,23 +65,27 @@ void main(void)
     
     //SLEEP();
     
+    vl53l1x_set_dist_mode(VL53L1X_DIST_MODE_SHORT);
+    vl53l1x_set_timing_budget_ms(15);
     vl53l1x_start_ranging();
     
     while (1)
     {
-        
+        NOP();
+#if 0
         if (sensor_init)
         { 
             while (vl53l1x_get_data_ready() == 0)
-                __delay_ms(1);
+                NOP();
+                //__delay_ms(1);
             
             uint16_t dist = vl53l1x_get_dist();
             vl53l1x_clear_int();
             
-            //printf("\rdist = %hu mm       \r", dist);
+            printf("\rdist = %hu mm       \r", dist);
         }
-        
-        __delay_ms(33);
+#endif 
+        //__delay_ms(50);
     }
     
     vl53l1x_stop_ranging();
