@@ -777,7 +777,7 @@
     (fill yes (arc_segments 32) (thermal_gap 0.508) (thermal_bridge_width 0.508))
     (polygon
       (pts
-        (xy 166.37 102.87) (xy 113.03 102.87) (xy 113.03 62.23) (xy 166.37 62.23)
+        (xy 154.94 92.71) (xy 113.03 92.71) (xy 113.03 62.23) (xy 154.94 62.23)
       )
     )
     (filled_polygon
@@ -1091,7 +1091,7 @@
     (fill yes (arc_segments 32) (thermal_gap 0.508) (thermal_bridge_width 0.508))
     (polygon
       (pts
-        (xy 168.91 104.14) (xy 110.49 104.14) (xy 110.49 60.96) (xy 168.91 60.96)
+        (xy 154.94 92.71) (xy 113.03 92.71) (xy 113.03 62.23) (xy 154.94 62.23)
       )
     )
     (filled_polygon
