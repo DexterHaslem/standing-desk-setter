@@ -6,7 +6,15 @@ dist/
 *.properties
 nbproject/private/**
 
+**/Debug/**
+**/Release/**
 .metadata/
 .jxbrowser.userdata
 dvt/
 RemoteSystemsTempFiles/
+
+**/.settings/**
+**/.launches/**
+
+**/fp-info-cache
+
