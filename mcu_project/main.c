@@ -9,6 +9,7 @@
 
 static volatile uint8_t sleep_countdown = 0;
 static volatile bool clear_int = false;
+static uint16_t last_dist_mm = 0;
 
 static bool dist_setting_active = false;
 static bool dist_sensor_initd = false;
@@ -24,12 +25,18 @@ static void awake_setup()
     IO_STATUS_LED_SetLow();
     reset_sleep_timer();
     IO_OUT_VSHTDN_SetHigh();
+    
+    /* reset timers in case there was already some data in counters */
+    TMR0_Initialize();
+    TMR1_Initialize();
 }
 
 static void enter_sleep(void)
 {   
-    IO_STATUS_LED_SetHigh();    
-    IO_OUT_VSHTDN_SetLow();
+    IO_STATUS_LED_SetHigh();
+    IO_OUT_VSHTDN_SetLow();    
+    TMR0_StopTimer();
+    TMR1_StopTimer();    
     NOP();
     NOP();
     SLEEP();
@@ -79,10 +86,10 @@ void main(void)
 {
     SYSTEM_Initialize();
     
+    IO_OUT_VSHTDN_SetHigh();
+    
     TMR0_SetInterruptHandler(on_systick_timer);
     TMR1_SetInterruptHandler(on_heartbeat_timer);    
-    //TMR0_StartTimer();
-    //TMR1_Starttimer();
     
     IOCCF3_SetInterruptHandler(on_sensor_data);
     IOCCF4_SetInterruptHandler(on_input_pin);
@@ -90,16 +97,15 @@ void main(void)
     
     INTERRUPT_GlobalInterruptEnable();
     INTERRUPT_PeripheralInterruptEnable();
-    
-    IO_OUT_VSHTDN_SetLow();
-    __delay_ms(25);
+        
+    //__delay_ms(15);
     
     dist_sensor_initd = vl53l1x_init();
     
     if (dist_sensor_initd)
     {
-        vl53l1x_set_dist_mode(VL53L1X_DIST_MODE_SHORT);
-        vl53l1x_set_timing_budget_ms(15);
+        //vl53l1x_set_dist_mode(VL53L1X_DIST_MODE_SHORT);
+        vl53l1x_set_timing_budget_ms(500);
         vl53l1x_start_ranging();
     }
     
@@ -110,22 +116,9 @@ void main(void)
         NOP();
         if (clear_int)
         {
-            vl53l1x_clear_int();
+            last_dist_mm = vl53l1x_get_dist();
+            vl53l1x_clear_int();            
             clear_int = false;
         }
-#if 0
-        if (sensor_init)
-        { 
-            while (vl53l1x_get_data_ready() == 0)
-                NOP();
-                //__delay_ms(1);
-            
-            uint16_t dist = vl53l1x_get_dist();
-            vl53l1x_clear_int();
-            
-            printf("\rdist = %hu mm       \r", dist);
-        }
-#endif 
-        //__delay_ms(50);
     }   
 }
