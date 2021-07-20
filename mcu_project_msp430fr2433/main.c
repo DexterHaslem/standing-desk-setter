@@ -47,10 +47,9 @@ int main(void)
     init_gpio();
     i2c_init();
 
+    RTCCTL = 0x0000;
+
 #if 1
-
-
-
 
     uint8_t data[32] = { 0xAA };
     i2c_master_write_reg1(0x28, 0xFE, data, 1);
