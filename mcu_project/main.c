@@ -15,6 +15,8 @@ static bool dist_setting_active = false;
 static bool dist_sensor_initd = false;
 static volatile bool do_wakeup = false;
 static volatile bool do_enter_sleep = false;
+static volatile bool ranging_active = false;
+static volatile bool do_input_pin = false;
 
 static void reset_sleep_timer(void)
 {
@@ -46,8 +48,16 @@ static void awake_setup()
 
 static void enter_sleep(void)
 {   
-    vl53l1x_stop_ranging();
-    vl53l1x_clear_int();
+    if (dist_sensor_initd)
+    {
+        if (ranging_active)
+        {
+            vl53l1x_stop_ranging();
+            ranging_active = false;
+        }
+        vl53l1x_clear_int();
+    }
+    clear_int = false;
     
     IO_STATUS_LED_SetHigh();
     
@@ -96,15 +106,14 @@ static void on_input_pin(void)
     else
     {
         reset_sleep_timer();
+        do_input_pin = true;
     }
 }
 
 void main(void)
 {
     SYSTEM_Initialize();
-    
-    IO_OUT_VSHTDN_SetHigh();
-    
+      
     TMR0_SetInterruptHandler(on_systick_timer);
     TMR1_SetInterruptHandler(on_heartbeat_timer);    
     
@@ -128,6 +137,7 @@ void main(void)
             clear_int = false;
             reset_sleep_timer();
         }
+        
         if (do_wakeup)
         {
             /* if we hit this, it will be true for the first timer tick */
@@ -139,7 +149,18 @@ void main(void)
             do_enter_sleep = false;
             enter_sleep();
             
-        }        
+        }
+        else if (do_input_pin)
+        {
+            if (!ranging_active)
+            {
+                vl53l1x_start_ranging();
+                ranging_active = true;
+            }
+            
+            /* TODO: long press for set, tap to range to */
+            do_input_pin = false;
+        }
         
     }   
 }

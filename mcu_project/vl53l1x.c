@@ -12,7 +12,7 @@
 /* address 0x29 over the wire after r/w bit shift */
 #define I2C_ADDR (0x52 >> 1)
 
-#define INIT_TIMEOUT_MS (150)
+#define INIT_TIMEOUT_MS (125)
 
 
 #define PHASECAL_CONFIG__TIMEOUT_MACROP     (0x004B)
