@@ -13,6 +13,8 @@ static uint16_t last_dist_mm = 0;
 
 static bool dist_setting_active = false;
 static bool dist_sensor_initd = false;
+static volatile bool do_wakeup = false;
+static volatile bool do_enter_sleep = false;
 
 static void reset_sleep_timer(void)
 {
@@ -27,18 +29,33 @@ static void awake_setup()
     IO_OUT_VSHTDN_SetHigh();
     
     /* reset timers in case there was already some data in counters */
-    TMR0_Initialize();
-    TMR1_Initialize();
+    /* dont do a full initialize cuz that nukes our callbacks */
+    //TMR0_Initialize();
+    //TMR1_Initialize();
+    
+    dist_sensor_initd = vl53l1x_init();
+    
+    if (dist_sensor_initd)
+    {
+        vl53l1x_set_dist_mode(VL53L1X_DIST_MODE_SHORT);
+        vl53l1x_set_timing_budget_ms(50);
+    }
+    
+    TMR1_StartTimer();
 }
 
 static void enter_sleep(void)
 {   
+    vl53l1x_stop_ranging();
+    vl53l1x_clear_int();
+    
     IO_STATUS_LED_SetHigh();
-    IO_OUT_VSHTDN_SetLow();    
+    
     TMR0_StopTimer();
     TMR1_StopTimer();    
     NOP();
     NOP();
+    IO_OUT_VSHTDN_SetLow();
     SLEEP();
 }
 
@@ -65,7 +82,7 @@ static void on_heartbeat_timer(void)
     {
         if (--sleep_countdown < 1)
         {
-            enter_sleep();
+            do_enter_sleep = true;            
         }
     }
 }
@@ -74,7 +91,7 @@ static void on_input_pin(void)
 {
     if (sleep_countdown == 0)
     {
-        awake_setup();       
+        do_wakeup = true;     
     }
     else
     {
@@ -91,25 +108,15 @@ void main(void)
     TMR0_SetInterruptHandler(on_systick_timer);
     TMR1_SetInterruptHandler(on_heartbeat_timer);    
     
-    IOCCF3_SetInterruptHandler(on_sensor_data);
     IOCCF4_SetInterruptHandler(on_input_pin);
     IOCCF5_SetInterruptHandler(on_input_pin);
     
     INTERRUPT_GlobalInterruptEnable();
-    INTERRUPT_PeripheralInterruptEnable();
+    INTERRUPT_PeripheralInterruptEnable();       
         
-    //__delay_ms(15);
+    IOCCF3_SetInterruptHandler(on_sensor_data);
     
-    dist_sensor_initd = vl53l1x_init();
-    
-    if (dist_sensor_initd)
-    {
-        //vl53l1x_set_dist_mode(VL53L1X_DIST_MODE_SHORT);
-        vl53l1x_set_timing_budget_ms(500);
-        vl53l1x_start_ranging();
-    }
-    
-    //enter_sleep();
+    enter_sleep();
     
     while (1)
     {
@@ -119,6 +126,20 @@ void main(void)
             last_dist_mm = vl53l1x_get_dist();
             vl53l1x_clear_int();            
             clear_int = false;
+            reset_sleep_timer();
         }
+        if (do_wakeup)
+        {
+            /* if we hit this, it will be true for the first timer tick */
+            awake_setup();
+            do_wakeup = false;
+        }
+        else if (do_enter_sleep)
+        {
+            do_enter_sleep = false;
+            enter_sleep();
+            
+        }        
+        
     }   
 }
