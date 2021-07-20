@@ -6,3 +6,7 @@ dist/
 *.properties
 nbproject/private/**
 
+.metadata/
+.jxbrowser.userdata
+dvt/
+RemoteSystemsTempFiles/
