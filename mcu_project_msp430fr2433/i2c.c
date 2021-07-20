@@ -67,12 +67,12 @@ enum eI2C_MODE i2c_master_write_reg2(uint8_t dev_addr, uint16_t reg, uint8_t *da
 
     /* Initialize slave address and interrupts */
     UCB0I2CSA = dev_addr;
-    UCB0IFG &= ~(UCTXIFG + UCRXIFG);       // Clear any pending interrupts
+    UCB0IFG &= ~(UCTXIFG + UCRXIFG);         // Clear any pending interrupts
     UCB0IE &= ~UCRXIE;                       // Disable RX interrupt
     UCB0IE |= UCTXIE;                        // Enable TX interrupt
 
     UCB0CTLW0 |= UCTR + UCTXSTT;             // I2C TX, start condition
-    __bis_SR_register(LPM0_bits + GIE);              // Enter LPM0 w/ interrupts
+    __bis_SR_register(LPM0_bits + GIE);      // Enter LPM0 w/ interrupts
 
     return mode;
 }
@@ -89,12 +89,12 @@ enum eI2C_MODE i2c_master_read_reg1(uint8_t dev_addr, uint8_t reg, uint8_t count
 
     /* Initialize slave address and interrupts */
     UCB0I2CSA = dev_addr;
-    UCB0IFG &= ~(UCTXIFG + UCRXIFG);       // Clear any pending interrupts
+    UCB0IFG &= ~(UCTXIFG + UCRXIFG);         // Clear any pending interrupts
     UCB0IE &= ~UCRXIE;                       // Disable RX interrupt
     UCB0IE |= UCTXIE;                        // Enable TX interrupt
 
     UCB0CTLW0 |= UCTR + UCTXSTT;             // I2C TX, start condition
-    __bis_SR_register(LPM0_bits + GIE);              // Enter LPM0 w/ interrupts
+    __bis_SR_register(LPM0_bits + GIE);      // Enter LPM0 w/ interrupts
 
     return mode;
 }
@@ -130,7 +130,7 @@ void i2c_init(void)
     UCB0IE |= UCNACKIE;
 }
 
-//#pragma vector = USCI_B0_VECTOR
+#pragma vector = USCI_B0_VECTOR
 __interrupt void i2c_isr(void)
 {
   //Must read from UCB0RXBUF
@@ -172,10 +172,11 @@ __interrupt void i2c_isr(void)
         switch (mode)
         {
           case I2C_TX_REG_ADDRESS_MODE:
-              if (--tx_count == 1)
+              if (tx_reg_count > 1)
               {
-                  /* two byte address, keep going in address mode  next time */
+                  /* two byte address, keep going in address mode next time */
                   UCB0TXBUF = (tx_reg_addr & 0xFF00) >> 8;
+                  tx_reg_count--;
               }
               else
               {

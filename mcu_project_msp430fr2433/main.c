@@ -33,35 +33,17 @@ static void init_clk_16mhz(void)
     while(CSCTL7 & (FLLUNLOCK0 | FLLUNLOCK1));         // FLL locked
 }
 
-#pragma vector = USCI_B0_VECTOR
-__interrupt void USCIB0_ISR(void)
-{
-    i2c_isr();
-    return;
-}
-
 int main(void)
 {
-    WDTCTL = WDTPW | WDTHOLD;	// Stop watchdog timer
+    RTCCTL = 0x0000; /* clear RTC, not cleared on BOR (or power remove at all, surprising! */
+    WDTCTL = WDTPW | WDTHOLD; /* stop watchdog */
     init_clk_16mhz();
     init_gpio();
     i2c_init();
 
-    RTCCTL = 0x0000;
+    //uint8_t addr = (0x52 >> 1);
+    //uint8_t data[32] = { 0xAA };
 
-#if 1
-
-    uint8_t data[32] = { 0xAA };
-    i2c_master_write_reg1(0x28, 0xFE, data, 1);
-
-    i2c_master_write_reg1(0x28, 0xFB, data, 1);
-
-    i2c_master_write_reg2(0x20, 0xDEAD, data, 1);
-#endif
-    while (1)
-    {
-        __no_operation();
-    }
     __bis_SR_register(LPM0_bits + GIE);
 	return 0;
 }
