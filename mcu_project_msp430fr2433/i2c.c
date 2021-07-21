@@ -11,19 +11,27 @@
  */
 #include "i2c.h"
 
-#define MAX_BUFFER_SIZE (64)
+#define MAX_TX_BUFFER_SIZE (8)
+#define MAX_RX_BUFFER_SIZE (8)
 static enum eI2C_MODE mode = I2C_IDLE_MODE;
 
 /* note: we use 16 bit regs, the vl53l1x has a mix */
 static uint16_t tx_reg_addr = 0;
 
-static uint8_t rx_buf[MAX_BUFFER_SIZE] = {0};
+static uint8_t rx_buf[MAX_RX_BUFFER_SIZE] = {0};
 static uint8_t rx_count = 0;
 static uint8_t rx_index = 0;
-static uint8_t tx_buf[MAX_BUFFER_SIZE] = {0};
+static uint8_t tx_buf[MAX_TX_BUFFER_SIZE] = {0};
 static uint8_t tx_count = 0;
 static uint8_t tx_reg_count = 0;
 static uint8_t tx_index = 0;
+
+static volatile bool got_nack = false;
+
+bool i2c_got_nack(void)
+{
+    return got_nack;
+}
 
 uint8_t* i2c_get_receive_buf(void)
 {
@@ -139,12 +147,19 @@ __interrupt void i2c_isr(void)
   switch(__even_in_range(UCB0IV, USCI_I2C_UCBIT9IFG))
   {
     case USCI_NONE:          break;         // Vector 0: No interrupts
-    case USCI_I2C_UCALIFG:   break;         // Vector 2: ALIFG
+    case USCI_I2C_UCALIFG:                  // Vector 2: ALIFG
+        /* arbitration lost, dont get stuck */
+        mode = I2C_IDLE_MODE;
+        UCB0IE &= ~UCTXIE;                       // disable TX interrupt
+        UCB0IE &= ~UCRXIE;                       // disable RX interrupt
+        __bic_SR_register_on_exit(CPUOFF);      // Exit LPM0
+        break;
     case USCI_I2C_UCNACKIFG:                // Vector 4: NACKIFG
-        /* wake */
+        got_nack = true;
         UCB0CTLW0 |= UCTXSTP;     // Send stop condition
         mode = I2C_IDLE_MODE;
         UCB0IE &= ~UCTXIE;                       // disable TX interrupt
+        UCB0IE &= ~UCRXIE;                       // disable RX interrupt
         __bic_SR_register_on_exit(CPUOFF);      // Exit LPM0
         break;
     case USCI_I2C_UCSTTIFG:  break;         // Vector 6: STTIFG
