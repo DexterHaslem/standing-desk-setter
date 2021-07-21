@@ -1,4 +1,31 @@
+#include <msp430.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <string.h>
+#include <stdlib.h>
 #include "i2c.h"
+#include "vl53l1x.h"
+
+void delay_timer0_1ms(void)
+{
+    /* this is not super accurate because of sw polling overhead,
+     * but good enough for dirty waits when running
+     */
+    TA0CCTL0 = 0;
+#if 0
+
+
+#endif
+    /* ~1ms on 16 MHz */
+    TA0CCR0 = 16100;
+
+    while ((TA0CCTL0 & BIT0) == 0)
+    {
+       // wait overflow
+    }
+    TA0CCTL0 = 0;
+   __no_operation();
+}
 
 static void init_gpio(void)
 {
@@ -35,14 +62,19 @@ static void init_clk_16mhz(void)
 
 int main(void)
 {
-    RTCCTL = 0x0000; /* clear RTC, not cleared on BOR (or power remove at all, surprising! */
+    RTCCTL = 0x0000; /* clear RTC, not cleared on BOR (or power remove at all, surprising!) */
     WDTCTL = WDTPW | WDTHOLD; /* stop watchdog */
+    TA0CTL |= TASSEL__SMCLK | MC__UP;  /* turn on timer a0, no interrupts, smclock up to mode , used for compare timers */
+
     init_clk_16mhz();
     init_gpio();
     i2c_init();
 
-    //uint8_t addr = (0x52 >> 1);
-    //uint8_t data[32] = { 0xAA };
+    bool sensor_initd = vl53l1x_init();
+    if (sensor_initd)
+    {
+        vl53l1x_start_ranging();
+    }
 
     __bis_SR_register(LPM0_bits + GIE);
 	return 0;

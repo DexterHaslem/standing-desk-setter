@@ -27,11 +27,11 @@ enum eI2C_MODE
     I2C_TIMEOUT_MODE
 };
 
-enum eI2C_MODE i2c_master_write_reg1(uint8_t dev_addr, uint8_t reg, uint8_t *data, uint8_t count);
-enum eI2C_MODE i2c_master_write_reg2(uint8_t dev_addr, uint16_t reg, uint8_t *data, uint8_t count);
-enum eI2C_MODE i2c_master_read_reg1(uint8_t dev_addr, uint8_t reg, uint8_t count);
-enum eI2C_MODE i2c_master_read_reg2(uint8_t dev_addr, uint16_t reg, uint8_t count);
-const uint8_t* i2c_get_receive_buf();
+enum eI2C_MODE i2c_write_reg1(uint8_t dev_addr, uint8_t reg, uint8_t *data, uint8_t count);
+enum eI2C_MODE i2c_write_reg2(uint8_t dev_addr, uint16_t reg, uint8_t *data, uint8_t count);
+enum eI2C_MODE i2c_read_reg1(uint8_t dev_addr, uint8_t reg, uint8_t count);
+enum eI2C_MODE i2c_read_reg2(uint8_t dev_addr, uint16_t reg, uint8_t count);
+uint8_t* i2c_get_receive_buf();
 void i2c_init(void);
 void i2c_isr(void);
 

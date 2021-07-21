@@ -25,11 +25,12 @@ static uint8_t tx_count = 0;
 static uint8_t tx_reg_count = 0;
 static uint8_t tx_index = 0;
 
-const uint8_t* i2c_get_receive_buf(void)
+uint8_t* i2c_get_receive_buf(void)
 {
     return &rx_buf[0];
 }
-enum eI2C_MODE i2c_master_write_reg1(uint8_t dev_addr, uint8_t reg, uint8_t *data, uint8_t count)
+
+enum eI2C_MODE i2c_write_reg1(uint8_t dev_addr, uint8_t reg, uint8_t *data, uint8_t count)
 {
     mode = I2C_TX_REG_ADDRESS_MODE;
     tx_reg_count = 1;
@@ -53,7 +54,7 @@ enum eI2C_MODE i2c_master_write_reg1(uint8_t dev_addr, uint8_t reg, uint8_t *dat
     return mode;
 }
 
-enum eI2C_MODE i2c_master_write_reg2(uint8_t dev_addr, uint16_t reg, uint8_t *data, uint8_t count)
+enum eI2C_MODE i2c_write_reg2(uint8_t dev_addr, uint16_t reg, uint8_t *data, uint8_t count)
 {
     mode = I2C_TX_REG_ADDRESS_MODE;
     tx_reg_addr = reg;
@@ -77,7 +78,7 @@ enum eI2C_MODE i2c_master_write_reg2(uint8_t dev_addr, uint16_t reg, uint8_t *da
     return mode;
 }
 
-enum eI2C_MODE i2c_master_read_reg1(uint8_t dev_addr, uint8_t reg, uint8_t count)
+enum eI2C_MODE i2c_read_reg1(uint8_t dev_addr, uint8_t reg, uint8_t count)
 {
     mode = I2C_TX_REG_ADDRESS_MODE;
     tx_reg_addr = reg;
@@ -99,7 +100,7 @@ enum eI2C_MODE i2c_master_read_reg1(uint8_t dev_addr, uint8_t reg, uint8_t count
     return mode;
 }
 
-enum eI2C_MODE i2c_master_read_reg2(uint8_t dev_addr, uint16_t reg, uint8_t count)
+enum eI2C_MODE i2c_read_reg2(uint8_t dev_addr, uint16_t reg, uint8_t count)
 {
     mode = I2C_TX_REG_ADDRESS_MODE;
     tx_reg_addr = reg;
@@ -140,7 +141,12 @@ __interrupt void i2c_isr(void)
     case USCI_NONE:          break;         // Vector 0: No interrupts
     case USCI_I2C_UCALIFG:   break;         // Vector 2: ALIFG
     case USCI_I2C_UCNACKIFG:                // Vector 4: NACKIFG
-      break;
+        /* wake */
+        UCB0CTLW0 |= UCTXSTP;     // Send stop condition
+        mode = I2C_IDLE_MODE;
+        UCB0IE &= ~UCTXIE;                       // disable TX interrupt
+        __bic_SR_register_on_exit(CPUOFF);      // Exit LPM0
+        break;
     case USCI_I2C_UCSTTIFG:  break;         // Vector 6: STTIFG
     case USCI_I2C_UCSTPIFG:  break;         // Vector 8: STPIFG
     case USCI_I2C_UCRXIFG3:  break;         // Vector 10: RXIFG3
