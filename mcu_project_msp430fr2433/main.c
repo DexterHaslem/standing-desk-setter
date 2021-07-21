@@ -73,7 +73,9 @@ int main(void)
     bool sensor_initd = vl53l1x_init();
     if (sensor_initd)
     {
-        vl53l1x_start_ranging();
+        //vl53l1x_start_ranging();
+        /* this turns on launchpad led */
+        P1OUT ^= BIT0;
     }
 
     __bis_SR_register(LPM0_bits + GIE);

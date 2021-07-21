@@ -8,7 +8,7 @@
 #include "vl53l1x.h"
 
 /* address 0x29 over the wire after r/w bit shift */
-#define I2C_ADDR (0x52 >> 1)
+#define I2C_ADDR (0x66)//(0x52 >> 1)
 
 /* dont set this too low or else it will fail errornously, it does take a bit */
 #define INIT_TIMEOUT_MS (140)
