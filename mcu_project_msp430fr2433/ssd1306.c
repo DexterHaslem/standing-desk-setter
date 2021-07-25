@@ -13,6 +13,8 @@
 #define WIDTH   (128)
 #define HEIGHT  (64)
 
+static uint8_t display_buffer[WIDTH * ((HEIGHT + 7) / 8)];/* oops.. WIDTH * HEIGHT];, bit stride */
+
 #define SSD1306_MEMORYMODE          (0x20)
 #define SSD1306_COLUMNADDR          (0x21)
 #define SSD1306_PAGEADDR            (0x22)
@@ -62,12 +64,19 @@ static void cmd1(uint8_t c, uint8_t a)
     scratch[0] = c;
     scratch[1] = a;
     /* just treat command as reg 0 */
-    i2c_write_reg1(DISP_ADDR, 0x00, &scratch, 2);
+    i2c_write_reg1(DISP_ADDR, 0x00, (uint8_t*) &scratch, 2);
 }
 
-static void cmd_n(uint8_t c, uint8_t *data, uint8_t count)
+
+static void cmd2(uint8_t c, uint8_t a1, uint8_t a2)
 {
-    i2c_write_reg1(DISP_ADDR, 0x00, data, count);
+    static uint8_t scratch[3];
+    scratch[0] = c;
+    scratch[1] = a1;
+    scratch[2] = a2;
+    /* just treat command as reg 0 */
+    i2c_write_reg1(DISP_ADDR, 0x00, (uint8_t*)&scratch, 3);
+
 }
 
 void ssd1306_init(void)
@@ -91,4 +100,24 @@ void ssd1306_init(void)
     cmd(SSD1306_NORMALDISPLAY);
     cmd(SSD1306_DEACTIVATE_SCROLL);
     cmd(SSD1306_DISPLAYON);
+}
+
+/* presents display buffer to device. this will send all width*height data to device for full redraw */
+void ssd1306_present_full(void)
+{
+    /* start at 0,0 incase we were left somewhere else */
+    //cmd2(SSD1306_PAGEADDR, 0x00, 0xFF);
+    //cmd1(SSD1306_COLUMNADDR, 0x00);
+
+
+    /* barf entire display content over single tx */
+    static const size_t count = sizeof(display_buffer);
+    /* kinda stinks but we need to go into draw mode first. one i2c tx extra isnt too bad tho */
+    /* note: dont use cmd for this, its not 0x00, just raw 0x40 first */
+    const uint8_t start_data = 0x40;
+    i2c_write(DISP_ADDR, &start_data, 1);
+    i2c_write(DISP_ADDR, &display_buffer[0], count);
+
+    __no_operation();
+    __no_operation();
 }

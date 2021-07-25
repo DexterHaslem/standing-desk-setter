@@ -20,13 +20,13 @@ static uint16_t tx_reg_addr = 0;
 static uint8_t* tx_buf;
 static uint8_t* rx_buf;
 
-static uint8_t rx_count = 0;
-static uint8_t rx_index = 0;
+static uint16_t rx_count = 0;
+static uint16_t rx_index = 0;
 
 //static uint8_t tx_buf[MAX_TX_BUFFER_SIZE] = {0};
-static uint8_t tx_count = 0;
+static uint16_t tx_count = 0;
 static uint8_t tx_reg_count = 0;
-static uint8_t tx_index = 0;
+static uint16_t tx_index = 0;
 
 static volatile bool got_nack = false;
 
@@ -37,7 +37,7 @@ bool i2c_got_nack(void)
 
 /* TODO: simplify this stuff, cleanup copy pasta, maybe even remove tx register mode for non register devices.. */
 
-enum eI2C_MODE i2c_write(uint8_t dev_addr, uint8_t *data, uint8_t count)
+enum eI2C_MODE i2c_write(uint8_t dev_addr, uint8_t *data, uint16_t count)
 {
     mode = I2C_TX_DATA_MODE;
     tx_reg_count = 0;
@@ -60,7 +60,7 @@ enum eI2C_MODE i2c_write(uint8_t dev_addr, uint8_t *data, uint8_t count)
     return mode;
 }
 
-enum eI2C_MODE i2c_write_reg1(uint8_t dev_addr, uint8_t reg, uint8_t *data, uint8_t count)
+enum eI2C_MODE i2c_write_reg1(uint8_t dev_addr, uint8_t reg, uint8_t *data, uint16_t count)
 {
     mode = I2C_TX_REG_ADDRESS_MODE;
     tx_reg_count = 1;
@@ -84,7 +84,7 @@ enum eI2C_MODE i2c_write_reg1(uint8_t dev_addr, uint8_t reg, uint8_t *data, uint
     return mode;
 }
 
-enum eI2C_MODE i2c_write_reg2(uint8_t dev_addr, uint16_t reg, uint8_t *data, uint8_t count)
+enum eI2C_MODE i2c_write_reg2(uint8_t dev_addr, uint16_t reg, uint8_t *data, uint16_t count)
 {
     mode = I2C_TX_REG_ADDRESS_MODE;
     tx_reg_addr = reg;
@@ -108,7 +108,7 @@ enum eI2C_MODE i2c_write_reg2(uint8_t dev_addr, uint16_t reg, uint8_t *data, uin
     return mode;
 }
 
-enum eI2C_MODE i2c_read(uint8_t dev_addr, uint8_t* dest, uint8_t count)
+enum eI2C_MODE i2c_read(uint8_t dev_addr, uint8_t* dest, uint16_t count)
 {
     mode = I2C_RX_DATA_MODE;
     tx_reg_count = 0;
@@ -130,7 +130,7 @@ enum eI2C_MODE i2c_read(uint8_t dev_addr, uint8_t* dest, uint8_t count)
     return mode;
 }
 
-enum eI2C_MODE i2c_read_reg1(uint8_t dev_addr, uint8_t reg, uint8_t* dest, uint8_t count)
+enum eI2C_MODE i2c_read_reg1(uint8_t dev_addr, uint8_t reg, uint8_t* dest, uint16_t count)
 {
     mode = I2C_TX_REG_ADDRESS_MODE;
     tx_reg_addr = reg;
@@ -153,7 +153,7 @@ enum eI2C_MODE i2c_read_reg1(uint8_t dev_addr, uint8_t reg, uint8_t* dest, uint8
     return mode;
 }
 
-enum eI2C_MODE i2c_read_reg2(uint8_t dev_addr, uint16_t reg, uint8_t* dest, uint8_t count)
+enum eI2C_MODE i2c_read_reg2(uint8_t dev_addr, uint16_t reg, uint8_t* dest, uint16_t count)
 {
     mode = I2C_TX_REG_ADDRESS_MODE;
     tx_reg_addr = reg;

@@ -75,6 +75,8 @@ int main(void)
 
     ssd1306_init();
 
+    ssd1306_present_full();
+
     bool sensor_initd = vl53l1x_init();
     if (sensor_initd)
     {
