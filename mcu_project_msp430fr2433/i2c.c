@@ -233,7 +233,8 @@ void i2c_init(void)
     UCB0CTLW0 = UCSWRST;                      // Enable SW reset
     UCB0CTLW0 |= UCMODE_3 | UCMST | UCSSEL__SMCLK | UCSYNC; // I2C master mode, SMCLK, sync mode
     // SMCLK = 16 MHz
-    UCB0BRW = 160;                            // fSCL = SMCLK/160 = ~100kHz
+    //UCB0BRW = 160;                            // fSCL = SMCLK/160 = ~100kHz
+    UCB0BRW = 40;                            // fSCL = SMCLK/40 = ~400kHz
     UCB0CTLW0 &= ~UCSWRST;                    // Clear SW reset, resume operation
     // enable nack interrupts
     UCB0IE |= UCNACKIE;
