@@ -72,9 +72,15 @@ int main(void)
     i2c_init();
 
     ssd1306_init();
+
+    ssd1306_pixel(0, 0);
+    ssd1306_pixel(127, 0);
+    ssd1306_pixel(0, 63);
+    ssd1306_pixel(127, 63);
+
     ssd1306_present_full();
 
-#if 0
+#if 1
     bool sensor_initd = vl53l1x_init();
     if (sensor_initd)
     {

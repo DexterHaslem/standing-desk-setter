@@ -47,7 +47,6 @@ enum eI2C_MODE i2c_write_nostop(uint8_t dev_addr, uint8_t *data, uint16_t count)
    tx_count = count;
    rx_index = 0;
    tx_index = 0;
-
    tx_buf = data;
 
    /* Initialize slave address and interrupts */
@@ -55,9 +54,9 @@ enum eI2C_MODE i2c_write_nostop(uint8_t dev_addr, uint8_t *data, uint16_t count)
    UCB0IFG &= ~(UCTXIFG + UCRXIFG);       // Clear any pending interrupts
    UCB0IE &= ~UCRXIE;                     // Disable RX interrupt
    UCB0IE |= UCTXIE;                      // Enable TX interrupt
-
    UCB0CTLW0 |= UCTR + UCTXSTT;           // I2C TX, start condition
-   __bis_SR_register(LPM0_bits + GIE);    // Enter LPM0 w/ interrupts
+
+    __bis_SR_register(LPM0_bits + GIE);    // Enter LPM0 w/ interrupts
 
    return mode;
 }
@@ -68,10 +67,15 @@ enum eI2C_MODE i2c_write_cont(uint8_t dev_addr, uint8_t *data, uint16_t count)
    mode = I2C_TX_DATA_MODE;
    tx_reg_count = 0;
    rx_count = 0;
-   tx_count = count;
+   /* remove our initial buf load */
+   tx_count = count - 1;
    rx_index = 0;
    tx_index = 0;
    tx_buf = data;
+
+   /* load buf with start of data */
+   UCB0TXBUF = data[tx_index++];
+
    /* Initialize slave address and interrupts */
    UCB0I2CSA = dev_addr;
    UCB0IFG &= ~(UCTXIFG + UCRXIFG);       // Clear any pending interrupts
@@ -79,8 +83,6 @@ enum eI2C_MODE i2c_write_cont(uint8_t dev_addr, uint8_t *data, uint16_t count)
    UCB0IE |= UCTXIE;                      // Enable TX interrupt
 
    //UCB0CTLW0 |= UCTR + UCTXSTT;           // I2C TX, start condition
-   /* load buf with start of data */
-   UCB0TXBUF = data[tx_count++];
    __bis_SR_register(LPM0_bits + GIE);    // Enter LPM0 w/ interrupts
 
    return mode;

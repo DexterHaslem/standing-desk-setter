@@ -83,8 +83,8 @@ void ssd1306_init(void)
 {
     cmd(SSD1306_DISPLAYOFF);
     cmd(SSD1306_CHARGEPUMP);
-    cmd1(SSD1306_SETPRECHARGE, 0x22);
-    cmd1(SSD1306_SETCONTRAST, 0xFF);
+    cmd1(SSD1306_SETPRECHARGE, 0x33);
+    cmd1(SSD1306_SETCONTRAST, 0x8A);
 
     cmd1(SSD1306_SETDISPLAYCLOCKDIV, 0x80); /* display ratio to recommended 0x80 */
     cmd1(SSD1306_SETMULTIPLEX, HEIGHT - 1);
@@ -103,7 +103,16 @@ void ssd1306_init(void)
     cmd(SSD1306_DEACTIVATE_SCROLL);
     cmd(SSD1306_DISPLAYON);
 
-    //memset(display_buffer, 0x1E, sizeof(display_buffer));
+    /* start at 0,0 incase we were left somewhere else */
+    cmd2(SSD1306_PAGEADDR, 0x00, 0xFF);
+    cmd2(SSD1306_COLUMNADDR, 0x00, WIDTH - 1);
+
+    //memset(display_buffer, 0xff, sizeof(display_buffer));
+}
+
+void ssd1306_pixel(uint16_t x, uint16_t y)
+{
+    display_buffer[x + (y/8)*WIDTH] |= (1 << (y&7));
 }
 
 /* presents display buffer to device. this will send all width*height data to device for full redraw */
@@ -114,13 +123,8 @@ void ssd1306_present_full(void)
     cmd2(SSD1306_COLUMNADDR, 0x00, WIDTH - 1);
 
     /* barf entire display content over single tx */
-    //static const size_t count = sizeof(display_buffer);
-    /* kinda stinks but we need to go into draw mode first. one i2c tx extra isnt too bad tho */
     /* note: dont use cmd for this, its not 0x00, just raw 0x40 first */
-    uint8_t start_data = 0x40;
-    //i2c_write(DISP_ADDR, &start_data, 1);
-    //i2c_write(DISP_ADDR, &display_buffer[0], count);
-
-    i2c_write_nostop(DISP_ADDR, &start_data, 1);
+    uint8_t start_data[1] = {0x40};
+    i2c_write_nostop(DISP_ADDR, &start_data[0], 1);
     i2c_write_cont(DISP_ADDR, display_buffer, sizeof(display_buffer));
 }

@@ -16,5 +16,5 @@
 
 void ssd1306_init(void);
 void ssd1306_present_full(void);
-
+void ssd1306_pixel(uint16_t x, uint16_t y);
 #endif /* SSD1306_H_ */
