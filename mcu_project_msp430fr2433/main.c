@@ -78,7 +78,7 @@ int main(void)
     ssd1306_pixel(0, 63);
     ssd1306_pixel(127, 63);
 
-    ssd1306_str(30, 25, "hello");
+    ssd1306_str(30, 25, "hello world super long line to see if it wraps hehe");
 
     ssd1306_present_full();
 

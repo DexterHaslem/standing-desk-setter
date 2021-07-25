@@ -115,7 +115,8 @@ void ssd1306_char(uint8_t x, uint8_t y, uint8_t ch)
 {
     for (uint8_t i = 0; i < 5; ++i)
     {
-        uint8_t line = ssd1306_font[ch * 5 + i];
+        uint16_t idx = ch * 5 + i; /* compiler warning it cant detect otherwise */
+        uint8_t line = ssd1306_font[idx];
         for (uint8_t j = 0; j < 8; ++j, line >>= 1)
         {
             if (line & 1)
@@ -134,7 +135,8 @@ void ssd1306_str(uint8_t x, uint8_t y, char *str)
         uint8_t c = *p - 32;
         ssd1306_char(x, y, c);
         x += 6;
-        if (x >= WIDTH)
+        /* if we're going to hit the corner on next character, dont half or write offscreen */
+        if (x >= WIDTH - 1 - 6)
         {
             x = 0;
             y += 9;
