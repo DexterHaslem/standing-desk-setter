@@ -70,6 +70,10 @@ int main(void)
     init_gpio();
     i2c_init();
 
+    delay_timer0_1ms();
+
+    ssd1306_init();
+
     bool sensor_initd = vl53l1x_init();
     if (sensor_initd)
     {
