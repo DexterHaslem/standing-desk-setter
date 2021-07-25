@@ -102,13 +102,8 @@ void ssd1306_init(void)
     cmd(SSD1306_DISPLAYALLON_RESUME);
     cmd(SSD1306_NORMALDISPLAY);
     cmd(SSD1306_DEACTIVATE_SCROLL);
-    cmd(SSD1306_DISPLAYON);
 
-    /* start at 0,0 incase we were left somewhere else */
-    cmd2(SSD1306_PAGEADDR, 0x00, 0xFF);
-    cmd2(SSD1306_COLUMNADDR, 0x00, WIDTH - 1);
-
-    //memset(display_buffer, 0xff, sizeof(display_buffer));
+    //cmd(SSD1306_DISPLAYON);
 }
 
 void ssd1306_char(uint8_t x, uint8_t y, uint8_t ch)
@@ -162,4 +157,14 @@ void ssd1306_present_full(void)
     uint8_t start_data[1] = {0x40};
     i2c_write_nostop(DISP_ADDR, &start_data[0], 1);
     i2c_write_cont(DISP_ADDR, display_buffer, sizeof(display_buffer));
+}
+
+void ssd1306_sleep(void)
+{
+    cmd(SSD1306_DISPLAYOFF);
+}
+
+void ssd1306_awake(void)
+{
+    cmd(SSD1306_DISPLAYON);
 }

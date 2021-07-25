@@ -23,6 +23,7 @@ void delay_timer0_1ms(void)
     while ((TA0CCTL0 & BIT0) == 0)
     {
        // wait overflow
+        __no_operation();
     }
     TA0CCTL0 = 0;
    __no_operation();
@@ -72,15 +73,14 @@ int main(void)
     i2c_init();
 
     ssd1306_init();
-
+#if 0
     ssd1306_pixel(0, 0);
     ssd1306_pixel(127, 0);
     ssd1306_pixel(0, 63);
     ssd1306_pixel(127, 63);
-
     ssd1306_str(30, 25, "hello world super long line to see if it wraps hehe");
-
     ssd1306_present_full();
+#endif
 
 #if 1
     bool sensor_initd = vl53l1x_init();
@@ -91,6 +91,9 @@ int main(void)
         P1OUT ^= BIT0;
     }
 #endif
+
+    ssd1306_sleep();
+
     __bis_SR_register(LPM0_bits + GIE);
 	return 0;
 }

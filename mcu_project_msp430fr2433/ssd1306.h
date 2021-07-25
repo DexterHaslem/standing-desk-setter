@@ -19,4 +19,7 @@ void ssd1306_pixel(uint8_t x, uint8_t y);
 void ssd1306_char(uint8_t x, uint8_t y, uint8_t ch);
 void ssd1306_str(uint8_t x, uint8_t y, char *str);
 
+void ssd1306_sleep(void);
+void ssd1306_awake(void);
+
 #endif /* SSD1306_H_ */
