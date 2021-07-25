@@ -140,15 +140,15 @@ static void write2_reg2(uint16_t reg, uint16_t data)
 
 static uint8_t read1_reg2(uint16_t reg)
 {
-    i2c_read_reg2(I2C_ADDR,  reg, 1);
-    uint8_t *buf = i2c_get_receive_buf();
-    return buf[0];
+    uint8_t buf;
+    i2c_read_reg2(I2C_ADDR, reg, &buf, 1);
+    return buf;
 }
 
 static uint16_t read2_reg2(uint16_t reg)
 {
-    i2c_read_reg2(I2C_ADDR,  reg, 2);
-    uint8_t *buf = i2c_get_receive_buf();
+    uint8_t buf[2];
+    i2c_read_reg2(I2C_ADDR, reg, buf, 2);
     /* TODO: check endian */
     return ((buf[0] << 8) | buf[1]);
 }

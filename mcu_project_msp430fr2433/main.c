@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include "i2c.h"
 #include "vl53l1x.h"
+#include "ssd1306.h"
 
 void delay_timer0_1ms(void)
 {

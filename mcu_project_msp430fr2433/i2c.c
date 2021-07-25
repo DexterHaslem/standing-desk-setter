@@ -11,17 +11,19 @@
  */
 #include "i2c.h"
 
-#define MAX_TX_BUFFER_SIZE (8)
-#define MAX_RX_BUFFER_SIZE (8)
 static enum eI2C_MODE mode = I2C_IDLE_MODE;
 
 /* note: we use 16 bit regs, the vl53l1x has a mix */
 static uint16_t tx_reg_addr = 0;
 
-static uint8_t rx_buf[MAX_RX_BUFFER_SIZE] = {0};
+//static uint8_t rx_buf[MAX_RX_BUFFER_SIZE] = {0};
+static uint8_t* tx_buf;
+static uint8_t* rx_buf;
+
 static uint8_t rx_count = 0;
 static uint8_t rx_index = 0;
-static uint8_t tx_buf[MAX_TX_BUFFER_SIZE] = {0};
+
+//static uint8_t tx_buf[MAX_TX_BUFFER_SIZE] = {0};
 static uint8_t tx_count = 0;
 static uint8_t tx_reg_count = 0;
 static uint8_t tx_index = 0;
@@ -31,11 +33,6 @@ static volatile bool got_nack = false;
 bool i2c_got_nack(void)
 {
     return got_nack;
-}
-
-uint8_t* i2c_get_receive_buf(void)
-{
-    return &rx_buf[0];
 }
 
 /* TODO: simplify this stuff, cleanup copy pasta, maybe even remove tx register mode for non register devices.. */
@@ -49,7 +46,7 @@ enum eI2C_MODE i2c_write(uint8_t dev_addr, uint8_t *data, uint8_t count)
     rx_index = 0;
     tx_index = 0;
 
-    memcpy(tx_buf, data, count);
+    tx_buf = data;
 
     /* Initialize slave address and interrupts */
     UCB0I2CSA = dev_addr;
@@ -73,7 +70,7 @@ enum eI2C_MODE i2c_write_reg1(uint8_t dev_addr, uint8_t reg, uint8_t *data, uint
     rx_index = 0;
     tx_index = 0;
 
-    memcpy(tx_buf, data, count);
+    tx_buf = data;
 
     /* Initialize slave address and interrupts */
     UCB0I2CSA = dev_addr;
@@ -97,7 +94,7 @@ enum eI2C_MODE i2c_write_reg2(uint8_t dev_addr, uint16_t reg, uint8_t *data, uin
     rx_index = 0;
     tx_index = 0;
 
-    memcpy(tx_buf, data, count);
+    tx_buf = data;
 
     /* Initialize slave address and interrupts */
     UCB0I2CSA = dev_addr;
@@ -111,7 +108,7 @@ enum eI2C_MODE i2c_write_reg2(uint8_t dev_addr, uint16_t reg, uint8_t *data, uin
     return mode;
 }
 
-enum eI2C_MODE i2c_read(uint8_t dev_addr, uint8_t count)
+enum eI2C_MODE i2c_read(uint8_t dev_addr, uint8_t* dest, uint8_t count)
 {
     mode = I2C_RX_DATA_MODE;
     tx_reg_count = 0;
@@ -119,6 +116,7 @@ enum eI2C_MODE i2c_read(uint8_t dev_addr, uint8_t count)
     rx_count = count;
     rx_index = 0;
     tx_index = 0;
+    rx_buf = dest;
 
     /* since we have no register to send, we can immediately go to rx mode */
     UCB0IFG &= ~(UCTXIFG + UCRXIFG);         // Clear any pending interrupts
@@ -132,7 +130,7 @@ enum eI2C_MODE i2c_read(uint8_t dev_addr, uint8_t count)
     return mode;
 }
 
-enum eI2C_MODE i2c_read_reg1(uint8_t dev_addr, uint8_t reg, uint8_t count)
+enum eI2C_MODE i2c_read_reg1(uint8_t dev_addr, uint8_t reg, uint8_t* dest, uint8_t count)
 {
     mode = I2C_TX_REG_ADDRESS_MODE;
     tx_reg_addr = reg;
@@ -141,6 +139,7 @@ enum eI2C_MODE i2c_read_reg1(uint8_t dev_addr, uint8_t reg, uint8_t count)
     rx_count = count;
     rx_index = 0;
     tx_index = 0;
+    rx_buf = dest;
 
     /* Initialize slave address and interrupts */
     UCB0I2CSA = dev_addr;
@@ -154,7 +153,7 @@ enum eI2C_MODE i2c_read_reg1(uint8_t dev_addr, uint8_t reg, uint8_t count)
     return mode;
 }
 
-enum eI2C_MODE i2c_read_reg2(uint8_t dev_addr, uint16_t reg, uint8_t count)
+enum eI2C_MODE i2c_read_reg2(uint8_t dev_addr, uint16_t reg, uint8_t* dest, uint8_t count)
 {
     mode = I2C_TX_REG_ADDRESS_MODE;
     tx_reg_addr = reg;
@@ -163,6 +162,7 @@ enum eI2C_MODE i2c_read_reg2(uint8_t dev_addr, uint16_t reg, uint8_t count)
     rx_count = count;
     rx_index = 0;
     tx_index = 0;
+    rx_buf = dest;
 
     /* Initialize slave address and interrupts */
     UCB0I2CSA = dev_addr;

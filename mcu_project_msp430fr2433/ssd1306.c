@@ -65,7 +65,7 @@ static void cmd1(uint8_t c, uint8_t a)
     i2c_write_reg1(DISP_ADDR, 0x00, &scratch, 2);
 }
 
-static void cmd_n(uint8_t c, uint8_t *data, size_t count)
+static void cmd_n(uint8_t c, uint8_t *data, uint8_t count)
 {
     i2c_write_reg1(DISP_ADDR, 0x00, data, count);
 }
