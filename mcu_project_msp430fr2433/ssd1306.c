@@ -114,22 +114,13 @@ void ssd1306_present_full(void)
     cmd2(SSD1306_COLUMNADDR, 0x00, WIDTH - 1);
 
     /* barf entire display content over single tx */
-    static const size_t count = sizeof(display_buffer);
+    //static const size_t count = sizeof(display_buffer);
     /* kinda stinks but we need to go into draw mode first. one i2c tx extra isnt too bad tho */
     /* note: dont use cmd for this, its not 0x00, just raw 0x40 first */
     uint8_t start_data = 0x40;
     //i2c_write(DISP_ADDR, &start_data, 1);
     //i2c_write(DISP_ADDR, &display_buffer[0], count);
 
-    i2c_write(DISP_ADDR, &start_data, 1);
-    __no_operation();
-    __no_operation();
-    uint16_t c = 0;
-    while (c < count)
-    {
-        uint8_t buf[2] = { 0x40, display_buffer[c] };
-        i2c_write(DISP_ADDR, &buf[0], 2);
-        ++c;
-    }
-
+    i2c_write_nostop(DISP_ADDR, &start_data, 1);
+    i2c_write_cont(DISP_ADDR, display_buffer, sizeof(display_buffer));
 }

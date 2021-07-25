@@ -30,6 +30,7 @@ static uint16_t tx_index = 0;
 
 static volatile bool got_nack = false;
 
+static bool nostop_mode = false;
 bool i2c_got_nack(void)
 {
     return got_nack;
@@ -37,8 +38,57 @@ bool i2c_got_nack(void)
 
 /* TODO: simplify this stuff, cleanup copy pasta, maybe even remove tx register mode for non register devices.. */
 
+enum eI2C_MODE i2c_write_nostop(uint8_t dev_addr, uint8_t *data, uint16_t count)
+{
+   nostop_mode = true;
+   mode = I2C_TX_DATA_MODE;
+   tx_reg_count = 0;
+   rx_count = 0;
+   tx_count = count;
+   rx_index = 0;
+   tx_index = 0;
+
+   tx_buf = data;
+
+   /* Initialize slave address and interrupts */
+   UCB0I2CSA = dev_addr;
+   UCB0IFG &= ~(UCTXIFG + UCRXIFG);       // Clear any pending interrupts
+   UCB0IE &= ~UCRXIE;                     // Disable RX interrupt
+   UCB0IE |= UCTXIE;                      // Enable TX interrupt
+
+   UCB0CTLW0 |= UCTR + UCTXSTT;           // I2C TX, start condition
+   __bis_SR_register(LPM0_bits + GIE);    // Enter LPM0 w/ interrupts
+
+   return mode;
+}
+
+enum eI2C_MODE i2c_write_cont(uint8_t dev_addr, uint8_t *data, uint16_t count)
+{
+   nostop_mode = false;
+   mode = I2C_TX_DATA_MODE;
+   tx_reg_count = 0;
+   rx_count = 0;
+   tx_count = count;
+   rx_index = 0;
+   tx_index = 0;
+   tx_buf = data;
+   /* Initialize slave address and interrupts */
+   UCB0I2CSA = dev_addr;
+   UCB0IFG &= ~(UCTXIFG + UCRXIFG);       // Clear any pending interrupts
+   UCB0IE &= ~UCRXIE;                     // Disable RX interrupt
+   UCB0IE |= UCTXIE;                      // Enable TX interrupt
+
+   //UCB0CTLW0 |= UCTR + UCTXSTT;           // I2C TX, start condition
+   /* load buf with start of data */
+   UCB0TXBUF = data[tx_count++];
+   __bis_SR_register(LPM0_bits + GIE);    // Enter LPM0 w/ interrupts
+
+   return mode;
+}
+
 enum eI2C_MODE i2c_write(uint8_t dev_addr, uint8_t *data, uint16_t count)
 {
+    nostop_mode = false;
     mode = I2C_TX_DATA_MODE;
     tx_reg_count = 0;
     rx_count = 0;
@@ -62,6 +112,7 @@ enum eI2C_MODE i2c_write(uint8_t dev_addr, uint8_t *data, uint16_t count)
 
 enum eI2C_MODE i2c_write_reg1(uint8_t dev_addr, uint8_t reg, uint8_t *data, uint16_t count)
 {
+    nostop_mode = false;
     mode = I2C_TX_REG_ADDRESS_MODE;
     tx_reg_count = 1;
     tx_reg_addr = reg;
@@ -86,6 +137,7 @@ enum eI2C_MODE i2c_write_reg1(uint8_t dev_addr, uint8_t reg, uint8_t *data, uint
 
 enum eI2C_MODE i2c_write_reg2(uint8_t dev_addr, uint16_t reg, uint8_t *data, uint16_t count)
 {
+    nostop_mode = false;
     mode = I2C_TX_REG_ADDRESS_MODE;
     tx_reg_addr = reg;
     tx_reg_count = 2;
@@ -179,9 +231,11 @@ enum eI2C_MODE i2c_read_reg2(uint8_t dev_addr, uint16_t reg, uint8_t* dest, uint
 void i2c_init(void)
 {
     UCB0CTLW0 = UCSWRST;                      // Enable SW reset
-    UCB0CTLW0 |= UCMODE_3 | UCMST | UCSSEL__SMCLK | UCSYNC; // I2C master mode, SMCLK
+    UCB0CTLW0 |= UCMODE_3 | UCMST | UCSSEL__SMCLK | UCSYNC; // I2C master mode, SMCLK, sync mode
+    // SMCLK = 16 MHz
     UCB0BRW = 160;                            // fSCL = SMCLK/160 = ~100kHz
     UCB0CTLW0 &= ~UCSWRST;                    // Clear SW reset, resume operation
+    // enable nack interrupts
     UCB0IE |= UCNACKIE;
 }
 
@@ -258,7 +312,7 @@ __interrupt void i2c_isr(void)
               UCB0IE |= UCRXIE;              // Enable RX interrupt
               UCB0IE &= ~UCTXIE;             // Disable TX interrupt
               UCB0CTLW0 &= ~UCTR;            // Switch to receiver
-              mode = I2C_RX_DATA_MODE;    // State state is to receive data
+              mode = I2C_RX_DATA_MODE;       // State state is to receive data
               UCB0CTLW0 |= UCTXSTT;          // Send repeated start
               if (rx_count == 1)
               {
@@ -277,7 +331,10 @@ __interrupt void i2c_isr(void)
               else
               {
                   //Done with transmission
-                  UCB0CTLW0 |= UCTXSTP;     // Send stop condition
+                  if (!nostop_mode)
+                  {
+                      UCB0CTLW0 |= UCTXSTP;     // Send stop condition
+                  }
                   mode = I2C_IDLE_MODE;
                   UCB0IE &= ~UCTXIE;                       // disable TX interrupt
                   __bic_SR_register_on_exit(CPUOFF);      // Exit LPM0
