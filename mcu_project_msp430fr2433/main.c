@@ -78,6 +78,8 @@ int main(void)
     ssd1306_pixel(0, 63);
     ssd1306_pixel(127, 63);
 
+    ssd1306_str(30, 25, "hello");
+
     ssd1306_present_full();
 
 #if 1

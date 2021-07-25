@@ -13,8 +13,10 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-
 void ssd1306_init(void);
 void ssd1306_present_full(void);
-void ssd1306_pixel(uint16_t x, uint16_t y);
+void ssd1306_pixel(uint8_t x, uint8_t y);
+void ssd1306_char(uint8_t x, uint8_t y, uint8_t ch);
+void ssd1306_str(uint8_t x, uint8_t y, char *str);
+
 #endif /* SSD1306_H_ */

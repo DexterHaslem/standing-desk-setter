@@ -5,6 +5,7 @@
  *      Author: Dexter
  */
 #include "ssd1306.h"
+#include "ssd1306_fonts.h"
 
 /* SSD1306 driver mostly adapted from common libraries like Adafruit_SSD1306, the sparkfun stuff, etc */
 
@@ -110,7 +111,39 @@ void ssd1306_init(void)
     //memset(display_buffer, 0xff, sizeof(display_buffer));
 }
 
-void ssd1306_pixel(uint16_t x, uint16_t y)
+void ssd1306_char(uint8_t x, uint8_t y, uint8_t ch)
+{
+    for (uint8_t i = 0; i < 5; ++i)
+    {
+        uint8_t line = ssd1306_font[ch * 5 + i];
+        for (uint8_t j = 0; j < 8; ++j, line >>= 1)
+        {
+            if (line & 1)
+            {
+                ssd1306_pixel(x + i, y + j);
+            }
+        }
+    }
+}
+
+void ssd1306_str(uint8_t x, uint8_t y, char *str)
+{
+    char *p = str;
+    while (*p)
+    {
+        uint8_t c = *p - 32;
+        ssd1306_char(x, y, c);
+        x += 6;
+        if (x >= WIDTH)
+        {
+            x = 0;
+            y += 9;
+        }
+        p++;
+    }
+}
+
+void ssd1306_pixel(uint8_t x, uint8_t y)
 {
     display_buffer[x + (y/8)*WIDTH] |= (1 << (y&7));
 }
