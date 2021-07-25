@@ -51,11 +51,11 @@ enum eI2C_MODE i2c_write(uint8_t dev_addr, uint8_t *data, uint16_t count)
     /* Initialize slave address and interrupts */
     UCB0I2CSA = dev_addr;
     UCB0IFG &= ~(UCTXIFG + UCRXIFG);       // Clear any pending interrupts
-    UCB0IE &= ~UCRXIE;                       // Disable RX interrupt
-    UCB0IE |= UCTXIE;                        // Enable TX interrupt
+    UCB0IE &= ~UCRXIE;                     // Disable RX interrupt
+    UCB0IE |= UCTXIE;                      // Enable TX interrupt
 
-    UCB0CTLW0 |= UCTR + UCTXSTT;             // I2C TX, start condition
-    __bis_SR_register(LPM0_bits + GIE);              // Enter LPM0 w/ interrupts
+    UCB0CTLW0 |= UCTR + UCTXSTT;           // I2C TX, start condition
+    __bis_SR_register(LPM0_bits + GIE);    // Enter LPM0 w/ interrupts
 
     return mode;
 }
@@ -254,7 +254,6 @@ __interrupt void i2c_isr(void)
                       mode = I2C_TX_DATA_MODE;        // Continue to transmision with the data in Transmit Buffer
               }
               break;
-
           case I2C_SWITCH_TO_RX_MODE:
               UCB0IE |= UCRXIE;              // Enable RX interrupt
               UCB0IE &= ~UCTXIE;             // Disable TX interrupt

@@ -71,12 +71,10 @@ int main(void)
     init_gpio();
     i2c_init();
 
-    delay_timer0_1ms();
-
     ssd1306_init();
-
     ssd1306_present_full();
 
+#if 0
     bool sensor_initd = vl53l1x_init();
     if (sensor_initd)
     {
@@ -84,7 +82,7 @@ int main(void)
         /* this turns on launchpad led */
         P1OUT ^= BIT0;
     }
-
+#endif
     __bis_SR_register(LPM0_bits + GIE);
 	return 0;
 }

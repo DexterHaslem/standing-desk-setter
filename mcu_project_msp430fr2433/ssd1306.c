@@ -82,42 +82,54 @@ static void cmd2(uint8_t c, uint8_t a1, uint8_t a2)
 void ssd1306_init(void)
 {
     cmd(SSD1306_DISPLAYOFF);
-    cmd1(SSD1306_SETDISPLAYCLOCKDIV, 0x80);
+    cmd(SSD1306_CHARGEPUMP);
+    cmd1(SSD1306_SETPRECHARGE, 0x22);
+    cmd1(SSD1306_SETCONTRAST, 0xFF);
+
+    cmd1(SSD1306_SETDISPLAYCLOCKDIV, 0x80); /* display ratio to recommended 0x80 */
     cmd1(SSD1306_SETMULTIPLEX, HEIGHT - 1);
-    cmd1(SSD1306_SETDISPLAYOFFSET, 0x00);
+    cmd1(SSD1306_SETDISPLAYOFFSET, 0x00); /* no offset */
     cmd(SSD1306_SETSTARTLINE | 0x00);
-    cmd1(SSD1306_CHARGEPUMP, 0x14); /* no external vcc, 3v3 */
-    cmd1(SSD1306_MEMORYMODE, 0x00); /* ks0108 */
-    cmd(SSD1306_SEGREMAP | 0x01);
+    cmd1(SSD1306_MEMORYMODE, 0x00); /* ks0108, memory mode 0 horizontal addressing */
+    cmd(SSD1306_SEGREMAP | 0x01); /* segement remap */
     cmd(SSD1306_COMSCANDEC);
 
     cmd1(SSD1306_SETCOMPINS, 0x12);
-    cmd1(SSD1306_SETCONTRAST, 0xCC);
-
-    cmd1(SSD1306_SETPRECHARGE, 0xf1);
+    //cmd1(SSD1306_SETCOMPINS, 0xDA);
     cmd1(SSD1306_SETVCOMDETECT, 0x40);
+
     cmd(SSD1306_DISPLAYALLON_RESUME);
     cmd(SSD1306_NORMALDISPLAY);
     cmd(SSD1306_DEACTIVATE_SCROLL);
     cmd(SSD1306_DISPLAYON);
+
+    //memset(display_buffer, 0x1E, sizeof(display_buffer));
 }
 
 /* presents display buffer to device. this will send all width*height data to device for full redraw */
 void ssd1306_present_full(void)
 {
     /* start at 0,0 incase we were left somewhere else */
-    //cmd2(SSD1306_PAGEADDR, 0x00, 0xFF);
-    //cmd1(SSD1306_COLUMNADDR, 0x00);
-
+    cmd2(SSD1306_PAGEADDR, 0x00, 0xFF);
+    cmd2(SSD1306_COLUMNADDR, 0x00, WIDTH - 1);
 
     /* barf entire display content over single tx */
     static const size_t count = sizeof(display_buffer);
     /* kinda stinks but we need to go into draw mode first. one i2c tx extra isnt too bad tho */
     /* note: dont use cmd for this, its not 0x00, just raw 0x40 first */
-    const uint8_t start_data = 0x40;
-    i2c_write(DISP_ADDR, &start_data, 1);
-    i2c_write(DISP_ADDR, &display_buffer[0], count);
+    uint8_t start_data = 0x40;
+    //i2c_write(DISP_ADDR, &start_data, 1);
+    //i2c_write(DISP_ADDR, &display_buffer[0], count);
 
+    i2c_write(DISP_ADDR, &start_data, 1);
     __no_operation();
     __no_operation();
+    uint16_t c = 0;
+    while (c < count)
+    {
+        uint8_t buf[2] = { 0x40, display_buffer[c] };
+        i2c_write(DISP_ADDR, &buf[0], 2);
+        ++c;
+    }
+
 }
