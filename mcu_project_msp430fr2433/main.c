@@ -29,6 +29,16 @@ void delay_timer0_1ms(void)
    __no_operation();
 }
 
+#pragma vector = PORT2_VECTOR
+__interrupt void btn_in_isr(void)
+{
+    PM5CTL0 &= ~LOCKLPM5;
+    /* clear flag we done */
+    P2IFG = 0x00;
+    /* PMM auto starts */
+    LPM4_EXIT;
+}
+
 static void init_gpio(void)
 {
     P1DIR = 0xFF;
@@ -38,6 +48,20 @@ static void init_gpio(void)
 
     P1SEL0 |= BIT2 | BIT3; /* P1.3, P1.2 to I2C SCL/SDA */
     P1SEL1 &= ~(BIT2 | BIT3);
+
+    /* set the two launchpad buttons on p2.3, p2.7 as inputs (0). they have no alt mode */
+    uint8_t btns = (BIT3 | BIT7);
+    /* PORT2 dummy */
+    P2DIR &= ~btns;
+    /* additionally, on the launchpad, the switches go to ground with no ext pull, enable weak pullup */
+    P2OUT |= btns;
+    P2REN = btns;
+    P2IFG = 0x00;
+    /* set button interrupt on high->low transistion (weak pull up'd)*/
+    P2IES = btns;
+    P2IFG = 0x00;
+    /* enable interrupt on buttons */
+    P2IE |= btns;
 
     // Disable the GPIO power-on default high-impedance mode to activate
     // previously configured port settings
@@ -62,6 +86,39 @@ static void init_clk_16mhz(void)
     while(CSCTL7 & (FLLUNLOCK0 | FLLUNLOCK1));         // FLL locked
 }
 
+static bool devices_initd = false;
+
+static void enter_deep_sleep(void)
+{
+    /* uncomment for full LPM4.5. note registers + ram lost
+    PMMCTL0_H = PMMPW_H; // open PMM
+    PMMCTL0_L |= PMMREGOFF; // set Flag to enter LPM4.5 with LPM4 request
+    */
+    if (devices_initd)
+    {
+        ssd1306_sleep();
+
+        /* TODO: vl513l1x sleep pin down */
+    }
+    __bis_SR_register(LPM4_bits + GIE);
+}
+
+static void exit_deep_sleep(void)
+{
+    P1OUT ^= BIT0;
+
+    i2c_init();
+    /* init devices incase this was first we woke up */
+    if (!devices_initd)
+    {
+        ssd1306_init();
+        vl53l1x_init();
+        devices_initd = true;
+    }
+    ssd1306_awake();
+    /* start timer for going back to sleep if nothing happens */
+}
+
 int main(void)
 {
     RTCCTL = 0x0000; /* clear RTC, not cleared on BOR (or power remove at all, surprising!) */
@@ -70,30 +127,21 @@ int main(void)
 
     init_clk_16mhz();
     init_gpio();
-    i2c_init();
 
-    ssd1306_init();
-#if 0
-    ssd1306_pixel(0, 0);
-    ssd1306_pixel(127, 0);
-    ssd1306_pixel(0, 63);
-    ssd1306_pixel(127, 63);
-    ssd1306_str(30, 25, "hello world super long line to see if it wraps hehe");
-    ssd1306_present_full();
-#endif
-
-#if 1
-    bool sensor_initd = vl53l1x_init();
-    if (sensor_initd)
+    while (1)
     {
-        //vl53l1x_start_ranging();
-        /* this turns on launchpad led */
-        P1OUT ^= BIT0;
+        enter_deep_sleep();
+
+        /* if we hit this point, we were just awakened by a button. */
+        exit_deep_sleep();
+
+        //ssd1306_str(1,  1, "i woke up");
+        //ssd1306_present_full();
+        __no_operation();
+        __no_operation();
     }
-#endif
 
-    ssd1306_sleep();
-
-    __bis_SR_register(LPM0_bits + GIE);
+    /* should never hit this */
+    __no_operation();
 	return 0;
 }
