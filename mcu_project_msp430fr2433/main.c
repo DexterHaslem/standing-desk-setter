@@ -50,8 +50,8 @@ static void init_gpio(void)
     P1SEL1 &= ~(BIT2 | BIT3);
 
     /* set the two launchpad buttons on p2.3, p2.7 as inputs (0). they have no alt mode */
-    uint8_t btns = (BIT3 | BIT7);
-    /* PORT2 dummy */
+    const uint8_t btns = (BIT3 | BIT7);
+
     P2DIR &= ~btns;
     /* additionally, on the launchpad, the switches go to ground with no ext pull, enable weak pullup */
     P2OUT |= btns;
@@ -59,7 +59,6 @@ static void init_gpio(void)
     P2IFG = 0x00;
     /* set button interrupt on high->low transistion (weak pull up'd)*/
     P2IES = btns;
-    P2IFG = 0x00;
     /* enable interrupt on buttons */
     P2IE |= btns;
 
@@ -132,8 +131,15 @@ int main(void)
     {
         enter_deep_sleep();
 
-        /* if we hit this point, we were just awakened by a button. */
+        P2IFG = 0x00;
+        P2IE &= ~(BIT1 | BIT7);
+
+        /* if we hit this point, we were just awakened by a button. ghetto debounce as hw has none. tiny pb is super noises at edge*/
+        for (uint8_t i = 125; i > 0; --i)
+            delay_timer0_1ms();
+
         exit_deep_sleep();
+        P2IE |= (BIT1 | BIT7);
 
         //ssd1306_str(1,  1, "i woke up");
         //ssd1306_present_full();
