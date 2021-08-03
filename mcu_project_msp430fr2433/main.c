@@ -6,6 +6,8 @@
 #include "i2c.h"
 #include "vl53l1x.h"
 #include "ssd1306.h"
+#include "logic.h"
+
 
 void delay_timer0_1ms(void)
 {
@@ -129,6 +131,8 @@ int main(void)
 
     while (1)
     {
+        update();
+#if 0
         enter_deep_sleep();
 
         P2IFG = 0x00;
@@ -141,10 +145,11 @@ int main(void)
         exit_deep_sleep();
         P2IE |= (BIT1 | BIT7);
 
-        //ssd1306_str(1,  1, "i woke up");
-        //ssd1306_present_full();
+        ssd1306_str(1,  1, "i woke up");
+        ssd1306_present_full();
         __no_operation();
         __no_operation();
+#endif
     }
 
     /* should never hit this */
