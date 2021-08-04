@@ -33,5 +33,7 @@ enum eVL53L1X_DIST_MODE vl53l1x_get_dist_mode(void);
 void vl53l1x_set_timing_budget_ms(uint16_t tb);
 uint16_t vl53l1x_get_timing_budget_ms(void);
 
+void vl53l1x_set_intermeasurement_ms(uint16_t ms);
+uint16_t vl53l1x_get_intermeasurement_ms(void);
 #endif	/* VL53L1X */
 

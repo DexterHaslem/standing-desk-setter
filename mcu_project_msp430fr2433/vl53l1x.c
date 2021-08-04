@@ -23,6 +23,13 @@
 #define RANGE_CONFIG__TIMEOUT_MACROP_A_HI   (0x005E)
 #define RANGE_CONFIG__TIMEOUT_MACROP_B_HI  	(0x0061)
 
+#define VL53L1_SYSTEM__INTERMEASUREMENT_PERIOD              (0x006C)
+#define VL53L1_RESULT__OSC_CALIBRATE_VAL                    (0x00DE)
+
+/* NOTE: there is virtually no error checking, no nack checks on reg writes
+ * live fast and die young
+ */
+
 static volatile uint16_t write_scratch;
 
 /* defines borrowed from vl53l1x_class.cpp - see LICENSES */
@@ -124,14 +131,14 @@ const uint8_t default_cfgs[] =  {
 };
 
 /* endian swap helper */
-static uint16_t be(uint16_t le)
+static uint16_t be16(uint16_t le)
 {
     const uint16_t hw = (le & 0x00FF) << 8;
     const uint16_t lw = (le & 0xFF00) >> 8;
     return hw | lw;
 }
 
-/* i2c helpers since we always same amount of data  */
+/* i2c helpers since we almost always same amount of data  */
 static void write1_reg2(uint16_t reg, uint8_t data)
 {
     write_scratch = data;
@@ -140,7 +147,7 @@ static void write1_reg2(uint16_t reg, uint8_t data)
 
 static void write2_reg2(uint16_t reg, uint16_t data)
 {
-    write_scratch = be(data);
+    write_scratch = be16(data);
     i2c_write_reg2(I2C_ADDR, reg, (uint8_t*)&write_scratch, 2);
 }
 
@@ -203,7 +210,8 @@ bool vl53l1x_init(void)
     }
     
     vl53l1x_start_ranging();
-    
+
+    /* this can take full intermeasurement period if its a fresh boot. default is ~103ms */
     while (!data_ready)
     {
         data_ready = vl53l1x_get_data_ready();
@@ -354,4 +362,26 @@ void vl53l1x_set_timing_budget_ms(uint16_t tb)
             write2_reg2(RANGE_CONFIG__TIMEOUT_MACROP_B_HI, lr ? 0x04a4 : 0x05c1);
             break;
     }
+}
+
+void vl53l1x_set_intermeasurement_ms(uint16_t ms)
+{
+    uint16_t pll = read2_reg2(VL53L1_RESULT__OSC_CALIBRATE_VAL);
+    pll = pll & 0x3ff;
+
+    /* need to write a 32 bit value in big endian order. our helper only handles
+     * uint16 since thats most common so swap bytes ourselves
+     */
+    uint32_t im_bytes = (uint32_t)(pll * ms * 1.075);
+
+    im_bytes = (((im_bytes & 0x000000FF) << 24) |
+                ((im_bytes & 0x0000FF00) <<  8) |
+                ((im_bytes & 0x00FF0000) >>  8) |
+                ((im_bytes & 0xFF000000) >> 24));
+    i2c_write_reg2(I2C_ADDR, VL53L1_SYSTEM__INTERMEASUREMENT_PERIOD, (uint8_t*)&im_bytes, 4);
+}
+
+uint16_t vl53l1x_get_intermeasurement_ms(void)
+{
+
 }

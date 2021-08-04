@@ -140,12 +140,13 @@ int main(void)
     init_gpio();
 
     i2c_init();
-    //ssd1306_init();
+    ssd1306_init();
     vl53l1x_init();
 
-    vl53l1x_set_dist_mode(VL53L1X_DIST_MODE_SHORT);
-    vl53l1x_set_timing_budget_ms(500);
-
+    //vl53l1x_set_dist_mode(VL53L1X_DIST_MODE_SHORT);
+    vl53l1x_set_timing_budget_ms(20);
+    vl53l1x_set_intermeasurement_ms(20);
+    vl53l1x_clear_int();
     vl53l1x_start_ranging();
 
     while (1)
