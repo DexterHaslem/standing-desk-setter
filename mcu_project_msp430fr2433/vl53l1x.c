@@ -132,7 +132,7 @@ const uint8_t default_cfgs[] =  {
 
 /* endian swap helpers */
 
-static uint32_t swap32(uint32_t v)
+static inline uint32_t swap32(uint32_t v)
 {
     return (((v & 0x000000FF) << 24) |
             ((v & 0x0000FF00) <<  8) |
@@ -140,7 +140,7 @@ static uint32_t swap32(uint32_t v)
             ((v & 0xFF000000) >> 24));
 }
 
-static uint16_t swap16(uint16_t v)
+static inline uint16_t swap16(uint16_t v)
 {
     return ((v & 0x00FF) << 8) | ((v & 0xFF00) >> 8);
 }
@@ -380,11 +380,7 @@ void vl53l1x_set_intermeasurement_ms(uint16_t ms)
 
     /* need to write a 32 bit value in big endian order */
     uint32_t im_bytes = (uint32_t)(pll * ms * 1.075);
-
-    im_bytes = (((im_bytes & 0x000000FF) << 24) |
-                ((im_bytes & 0x0000FF00) <<  8) |
-                ((im_bytes & 0x00FF0000) >>  8) |
-                ((im_bytes & 0xFF000000) >> 24));
+    im_bytes = swap32(im_bytes);
     i2c_write_reg2(I2C_ADDR, VL53L1_SYSTEM__INTERMEASUREMENT_PERIOD, (uint8_t*)&im_bytes, 4);
 }
 
@@ -396,7 +392,7 @@ uint16_t vl53l1x_get_intermeasurement_ms(void)
     i2c_read_reg2(I2C_ADDR, VL53L1_SYSTEM__INTERMEASUREMENT_PERIOD, (uint8_t*)&ims, 4);
 
     /* big endian -> msp30 native little endian */
-    swap32(ims);
+    ims = swap32(ims);
 
     uint16_t pll = read2_reg2(VL53L1_RESULT__OSC_CALIBRATE_VAL);
     pll = pll & 0x3ff;
