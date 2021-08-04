@@ -296,6 +296,7 @@ __interrupt void i2c_isr(void)
         switch (mode)
         {
           case I2C_TX_REG_ADDRESS_MODE:
+              /* NOTE: sent in big endian order */
               if (tx_reg_count > 1)
               {
                   /* two byte address, keep going in address mode next time */

@@ -32,12 +32,13 @@ void delay_timer0_1ms(void)
 }
 
 #pragma vector = PORT2_VECTOR
-__interrupt void btn_in_isr(void)
+__interrupt void p2_interrupt(void)
 {
     PM5CTL0 &= ~LOCKLPM5;
     /* clear flag we done */
     P2IFG = 0x00;
     /* PMM auto starts */
+    /* wake from any sleep */
     LPM4_EXIT;
 }
 
@@ -65,24 +66,24 @@ static void init_gpio(void)
     P1SEL0 |= BIT2 | BIT3; /* P1.3, P1.2 to I2C SCL/SDA */
     P1SEL1 &= ~(BIT2 | BIT3);
 
-    /* P2.0 to interrupt pin on vl53l1x, input */
-    P2DIR &= ~(BIT0);
-
     /* P2.1 to shutdown vl53l1x, output, already set output. drive high */
     vl513lx_set_shutdown(false);
 
     /* set the two launchpad buttons on p2.3, p2.7 as inputs (0). they have no alt mode */
+    /* P2.0 to interrupt pin on vl53l1x, input */
     const uint8_t btns = (BIT3 | BIT7);
-
-    P2DIR &= ~btns;
+    const uint8_t p2in_ints = (BIT0 | btns);
+    P2DIR &= ~p2in_ints;
     /* additionally, on the launchpad, the switches go to ground with no ext pull, enable weak pullup */
     P2OUT |= btns;
     P2REN = btns;
     P2IFG = 0x00;
+
     /* set button interrupt on high->low transistion (weak pull up'd)*/
-    P2IES = btns;
-    /* enable interrupt on buttons */
-    P2IE |= btns;
+    P2IES |= btns;
+
+    /* enable interrupt on buttons and vl53l1x interrupt */
+    P2IE |= p2in_ints;
 
     // Disable the GPIO power-on default high-impedance mode to activate
     // previously configured port settings
@@ -123,8 +124,6 @@ static void exit_deep_sleep(void)
 {
     P1OUT |= BIT0;
 
-    i2c_init();
-
     /* do this before, it will not ack when shutdown, incase never woke */
     vl513lx_set_shutdown(false);
     ssd1306_awake();
@@ -141,13 +140,25 @@ int main(void)
     init_gpio();
 
     i2c_init();
-    ssd1306_init();
+    //ssd1306_init();
     vl53l1x_init();
+
+    vl53l1x_set_dist_mode(VL53L1X_DIST_MODE_SHORT);
+    vl53l1x_set_timing_budget_ms(500);
+
+    vl53l1x_start_ranging();
 
     while (1)
     {
+        /* enter lpm0 with ints, wake on ranging data ready */
+        __bis_SR_register(LPM0_bits + GIE);
+
+        /* we woke up, vl53l1x has data */
+        vl53l1x_clear_int();
+
+        P1OUT ^= BIT0;
         //update();
-#if 1
+#if 0
         enter_deep_sleep();
 
         /* if we hit this point, we were just awakened by a button. ghetto debounce as hw has none. tiny pb is super noises at edge*/

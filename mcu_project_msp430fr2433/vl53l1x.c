@@ -123,6 +123,13 @@ const uint8_t default_cfgs[] =  {
 	0x00 /* 0x87 : start ranging, use StartRanging() or StopRanging(), If you want an automatic start after VL53L1X_init() call, put 0x40 in location 0x87 */
 };
 
+/* endian swap helper */
+static uint16_t be(uint16_t le)
+{
+    const uint16_t hw = (le & 0x00FF) << 8;
+    const uint16_t lw = (le & 0xFF00) >> 8;
+    return hw | lw;
+}
 
 /* i2c helpers since we always same amount of data  */
 static void write1_reg2(uint16_t reg, uint8_t data)
@@ -133,8 +140,7 @@ static void write1_reg2(uint16_t reg, uint8_t data)
 
 static void write2_reg2(uint16_t reg, uint16_t data)
 {
-    /* TODO: check endian */
-    write_scratch = data;
+    write_scratch = be(data);
     i2c_write_reg2(I2C_ADDR, reg, (uint8_t*)&write_scratch, 2);
 }
 
@@ -149,7 +155,8 @@ static uint16_t read2_reg2(uint16_t reg)
 {
     uint8_t buf[2];
     i2c_read_reg2(I2C_ADDR, reg, buf, 2);
-    /* TODO: check endian */
+
+    /* big endian returned, swap to le */
     return ((buf[0] << 8) | buf[1]);
 }
 
