@@ -41,6 +41,20 @@ __interrupt void btn_in_isr(void)
     LPM4_EXIT;
 }
 
+static void vl513lx_set_shutdown(bool sd)
+{
+    /* shutdown has active high marker.. but you pull it low to shutdown */
+    /* P2.1 */
+    if (!sd)
+    {
+        P2OUT |= BIT1;
+    }
+    else
+    {
+        P2OUT &= ~(BIT1);
+    }
+}
+
 static void init_gpio(void)
 {
     P1DIR = 0xFF;
@@ -50,6 +64,12 @@ static void init_gpio(void)
 
     P1SEL0 |= BIT2 | BIT3; /* P1.3, P1.2 to I2C SCL/SDA */
     P1SEL1 &= ~(BIT2 | BIT3);
+
+    /* P2.0 to interrupt pin on vl53l1x, input */
+    P2DIR &= ~(BIT0);
+
+    /* P2.1 to shutdown vl53l1x, output, already set output. drive high */
+    vl513lx_set_shutdown(false);
 
     /* set the two launchpad buttons on p2.3, p2.7 as inputs (0). they have no alt mode */
     const uint8_t btns = (BIT3 | BIT7);
@@ -87,35 +107,26 @@ static void init_clk_16mhz(void)
     while(CSCTL7 & (FLLUNLOCK0 | FLLUNLOCK1));         // FLL locked
 }
 
-static bool devices_initd = false;
-
 static void enter_deep_sleep(void)
 {
     /* uncomment for full LPM4.5. note registers + ram lost
     PMMCTL0_H = PMMPW_H; // open PMM
     PMMCTL0_L |= PMMREGOFF; // set Flag to enter LPM4.5 with LPM4 request
     */
-    if (devices_initd)
-    {
-        ssd1306_sleep();
-
-        /* TODO: vl513l1x sleep pin down */
-    }
+    ssd1306_sleep();
+    vl513lx_set_shutdown(true);
+    P1OUT &= ~(BIT0);
     __bis_SR_register(LPM4_bits + GIE);
 }
 
 static void exit_deep_sleep(void)
 {
-    P1OUT ^= BIT0;
+    P1OUT |= BIT0;
 
     i2c_init();
-    /* init devices incase this was first we woke up */
-    if (!devices_initd)
-    {
-        ssd1306_init();
-        vl53l1x_init();
-        devices_initd = true;
-    }
+
+    /* do this before, it will not ack when shutdown, incase never woke */
+    vl513lx_set_shutdown(false);
     ssd1306_awake();
     /* start timer for going back to sleep if nothing happens */
 }
@@ -129,24 +140,29 @@ int main(void)
     init_clk_16mhz();
     init_gpio();
 
+    i2c_init();
+    ssd1306_init();
+    vl53l1x_init();
+
     while (1)
     {
-        update();
-#if 0
+        //update();
+#if 1
         enter_deep_sleep();
 
-        P2IFG = 0x00;
-        P2IE &= ~(BIT1 | BIT7);
-
         /* if we hit this point, we were just awakened by a button. ghetto debounce as hw has none. tiny pb is super noises at edge*/
+
+        P2IFG = 0x00;
+        P2IE &= ~(BIT3 | BIT7);
+
         for (uint8_t i = 125; i > 0; --i)
             delay_timer0_1ms();
 
         exit_deep_sleep();
-        P2IE |= (BIT1 | BIT7);
+        P2IE |= (BIT3 | BIT7);
 
-        ssd1306_str(1,  1, "i woke up");
-        ssd1306_present_full();
+        //ssd1306_str(1,  1, "i woke up");
+        //ssd1306_present_full();
         __no_operation();
         __no_operation();
 #endif
