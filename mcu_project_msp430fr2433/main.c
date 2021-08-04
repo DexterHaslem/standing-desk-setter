@@ -130,6 +130,8 @@ static void exit_deep_sleep(void)
     /* start timer for going back to sleep if nothing happens */
 }
 
+static volatile char str[16];
+
 int main(void)
 {
     RTCCTL = 0x0000; /* clear RTC, not cleared on BOR (or power remove at all, surprising!) */
@@ -144,30 +146,40 @@ int main(void)
     ssd1306_awake();
     vl53l1x_init();
 
-    //vl53l1x_set_dist_mode(VL53L1X_DIST_MODE_SHORT);
-    vl53l1x_set_timing_budget_ms(500);
+    vl53l1x_set_dist_mode(VL53L1X_DIST_MODE_SHORT);
+    vl53l1x_set_timing_budget_ms(15);
     /* this sets upper bound of ranging! we can respond
      * and clear the interrupt in ~10uS so can really get close
      */
-    vl53l1x_set_intermeasurement_ms(500);
+    vl53l1x_set_intermeasurement_ms(15);
     vl53l1x_clear_int();
     vl53l1x_start_ranging();
 
-    char str[16];
     while (1)
     {
         /* enter lpm0 with ints, wake on ranging data ready */
         __bis_SR_register(LPM0_bits + GIE);
 
+        P2OUT |= BIT6;
+
         /* we woke up, vl53l1x has data */
         vl53l1x_clear_int();
 
         uint16_t mm = vl53l1x_get_dist();
-        ssd1306_clear();
+
+        const uint16_t nc = 28;
+        /* full clear memset takes quite a while, about 300us */
+        //ssd1306_clear();
+
+        ssd1306_clear_to(nc);
+        /* this takes about 360us */
         snprintf(str, sizeof(str), "%d", mm);
 
+        /* this is bound by count of chars sent over i2c. 25  is enough for our digits and ~1ms */
         ssd1306_str(1, 1, str);
-        ssd1306_present_to(100);
+        ssd1306_present_to(nc);
+
+        P2OUT &= ~BIT6;
         P1OUT ^= BIT0;
         //update();
 #if 0

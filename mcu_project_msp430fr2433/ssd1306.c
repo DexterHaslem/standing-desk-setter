@@ -106,9 +106,14 @@ void ssd1306_init(void)
     //cmd(SSD1306_DISPLAYON);
 }
 
+void ssd1306_clear_to(uint16_t count)
+{
+    memset(display_buffer, 0, count);
+}
+
 void ssd1306_clear(void)
 {
-    memset(display_buffer, 0, sizeof(display_buffer));
+    ssd1306_clear_to(sizeof(display_buffer));
 }
 
 void ssd1306_char(uint8_t x, uint8_t y, uint8_t ch)
@@ -122,10 +127,7 @@ void ssd1306_char(uint8_t x, uint8_t y, uint8_t ch)
         uint8_t line = ssd1306_font[idx];
         for (uint8_t j = 0; j < 8; ++j, line >>= 1)
         {
-            if (line & 1)
-            {
-                ssd1306_pixel(x + i, y + j);
-            }
+            ssd1306_pixel(x + i, y + j, line & 1);
         }
     }
 }
@@ -148,9 +150,16 @@ void ssd1306_str(uint8_t x, uint8_t y, char *str)
     }
 }
 
-void ssd1306_pixel(uint8_t x, uint8_t y)
+void ssd1306_pixel(uint8_t x, uint8_t y, bool on)
 {
-    display_buffer[x + (y/8)*WIDTH] |= (1 << (y&7));
+    if (on)
+    {
+        display_buffer[x + (y/8)*WIDTH] |= (1 << (y&7));
+    }
+    else
+    {
+        display_buffer[x + (y/8)*WIDTH] &= ~(1 << (y&7));
+    }
 }
 
 /* presents display buffer to device. this will send all width*height data to device for full redraw */
