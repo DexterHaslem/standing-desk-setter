@@ -7,7 +7,7 @@
 #include "vl53l1x.h"
 #include "ssd1306.h"
 #include "logic.h"
-
+#include <stdio.h>
 
 void delay_timer0_1ms(void)
 {
@@ -141,14 +141,19 @@ int main(void)
 
     i2c_init();
     ssd1306_init();
+    ssd1306_awake();
     vl53l1x_init();
 
     vl53l1x_set_dist_mode(VL53L1X_DIST_MODE_SHORT);
-    vl53l1x_set_timing_budget_ms(50);
-    vl53l1x_set_intermeasurement_ms(50);
+    vl53l1x_set_timing_budget_ms(33);
+    /* this sets upper bound of ranging! we can respond
+     * and clear the interrupt in ~10uS so can really get close
+     */
+    vl53l1x_set_intermeasurement_ms(35);
     vl53l1x_clear_int();
     vl53l1x_start_ranging();
 
+    char str[16];
     while (1)
     {
         /* enter lpm0 with ints, wake on ranging data ready */
@@ -157,6 +162,13 @@ int main(void)
         /* we woke up, vl53l1x has data */
         vl53l1x_clear_int();
 
+        uint16_t mm = vl53l1x_get_dist();
+        ssd1306_clear();
+        snprintf(str, sizeof(str), "%d", mm);
+
+        //ssd1306_str(1, 1, "test 123456789");
+        ssd1306_str(1, 1, str);
+        ssd1306_present_full();
         P1OUT ^= BIT0;
         //update();
 #if 0

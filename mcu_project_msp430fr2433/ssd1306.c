@@ -106,8 +106,16 @@ void ssd1306_init(void)
     //cmd(SSD1306_DISPLAYON);
 }
 
+void ssd1306_clear(void)
+{
+    memset(display_buffer, 0, sizeof(display_buffer));
+}
+
 void ssd1306_char(uint8_t x, uint8_t y, uint8_t ch)
 {
+    if (ch >= 176)
+         ch++;
+
     for (uint8_t i = 0; i < 5; ++i)
     {
         uint16_t idx = ch * 5 + i; /* compiler warning it cant detect otherwise */
