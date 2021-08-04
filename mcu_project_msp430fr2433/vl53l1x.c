@@ -130,12 +130,19 @@ const uint8_t default_cfgs[] =  {
 	0x00 /* 0x87 : start ranging, use StartRanging() or StopRanging(), If you want an automatic start after VL53L1X_init() call, put 0x40 in location 0x87 */
 };
 
-/* endian swap helper */
-static uint16_t be16(uint16_t le)
+/* endian swap helpers */
+
+static uint32_t swap32(uint32_t v)
 {
-    const uint16_t hw = (le & 0x00FF) << 8;
-    const uint16_t lw = (le & 0xFF00) >> 8;
-    return hw | lw;
+    return (((v & 0x000000FF) << 24) |
+            ((v & 0x0000FF00) <<  8) |
+            ((v & 0x00FF0000) >>  8) |
+            ((v & 0xFF000000) >> 24));
+}
+
+static uint16_t swap16(uint16_t v)
+{
+    return ((v & 0x00FF) << 8) | ((v & 0xFF00) >> 8);
 }
 
 /* i2c helpers since we almost always same amount of data  */
@@ -147,7 +154,7 @@ static void write1_reg2(uint16_t reg, uint8_t data)
 
 static void write2_reg2(uint16_t reg, uint16_t data)
 {
-    write_scratch = be16(data);
+    write_scratch = swap16(data);
     i2c_write_reg2(I2C_ADDR, reg, (uint8_t*)&write_scratch, 2);
 }
 
@@ -364,14 +371,14 @@ void vl53l1x_set_timing_budget_ms(uint16_t tb)
     }
 }
 
+
+
 void vl53l1x_set_intermeasurement_ms(uint16_t ms)
 {
     uint16_t pll = read2_reg2(VL53L1_RESULT__OSC_CALIBRATE_VAL);
     pll = pll & 0x3ff;
 
-    /* need to write a 32 bit value in big endian order. our helper only handles
-     * uint16 since thats most common so swap bytes ourselves
-     */
+    /* need to write a 32 bit value in big endian order */
     uint32_t im_bytes = (uint32_t)(pll * ms * 1.075);
 
     im_bytes = (((im_bytes & 0x000000FF) << 24) |
@@ -383,5 +390,17 @@ void vl53l1x_set_intermeasurement_ms(uint16_t ms)
 
 uint16_t vl53l1x_get_intermeasurement_ms(void)
 {
+    /* to read intermeasurement, we need to do similar to set, read 32bit, flip around ,
+     * and PLL math */
+    uint32_t ims;
+    i2c_read_reg2(I2C_ADDR, VL53L1_SYSTEM__INTERMEASUREMENT_PERIOD, (uint8_t*)&ims, 4);
 
+    /* big endian -> msp30 native little endian */
+    swap32(ims);
+
+    uint16_t pll = read2_reg2(VL53L1_RESULT__OSC_CALIBRATE_VAL);
+    pll = pll & 0x3ff;
+    /* take note the conversion is slightly different vs set */
+    ims = (uint16_t)(ims / (pll * 1.065));
+    return (uint16_t)ims;
 }
