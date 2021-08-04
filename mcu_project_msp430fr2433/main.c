@@ -146,12 +146,13 @@ int main(void)
     ssd1306_awake();
     vl53l1x_init();
 
+    const uint8_t speed = 50;
     vl53l1x_set_dist_mode(VL53L1X_DIST_MODE_SHORT);
-    vl53l1x_set_timing_budget_ms(15);
+    vl53l1x_set_timing_budget_ms(speed);
     /* this sets upper bound of ranging! we can respond
      * and clear the interrupt in ~10uS so can really get close
      */
-    vl53l1x_set_intermeasurement_ms(15);
+    vl53l1x_set_intermeasurement_ms(speed);
     vl53l1x_clear_int();
     vl53l1x_start_ranging();
 
@@ -166,7 +167,7 @@ int main(void)
         vl53l1x_clear_int();
 
         uint16_t mm = vl53l1x_get_dist();
-
+#if 0
         const uint16_t nc = 28;
         /* full clear memset takes quite a while, about 300us */
         //ssd1306_clear();
@@ -178,6 +179,8 @@ int main(void)
         /* this is bound by count of chars sent over i2c. 25  is enough for our digits and ~1ms */
         ssd1306_str(1, 1, str);
         ssd1306_present_to(nc);
+#endif
+        ssd1306_present_full();
 
         P2OUT &= ~BIT6;
         P1OUT ^= BIT0;
