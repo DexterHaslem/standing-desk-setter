@@ -144,12 +144,12 @@ int main(void)
     ssd1306_awake();
     vl53l1x_init();
 
-    vl53l1x_set_dist_mode(VL53L1X_DIST_MODE_SHORT);
-    vl53l1x_set_timing_budget_ms(33);
+    //vl53l1x_set_dist_mode(VL53L1X_DIST_MODE_SHORT);
+    vl53l1x_set_timing_budget_ms(500);
     /* this sets upper bound of ranging! we can respond
      * and clear the interrupt in ~10uS so can really get close
      */
-    vl53l1x_set_intermeasurement_ms(35);
+    vl53l1x_set_intermeasurement_ms(500);
     vl53l1x_clear_int();
     vl53l1x_start_ranging();
 
@@ -166,9 +166,8 @@ int main(void)
         ssd1306_clear();
         snprintf(str, sizeof(str), "%d", mm);
 
-        //ssd1306_str(1, 1, "test 123456789");
         ssd1306_str(1, 1, str);
-        ssd1306_present_full();
+        ssd1306_present_to(100);
         P1OUT ^= BIT0;
         //update();
 #if 0

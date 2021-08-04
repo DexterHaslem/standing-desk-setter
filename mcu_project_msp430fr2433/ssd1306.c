@@ -167,6 +167,15 @@ void ssd1306_present_full(void)
     i2c_write_cont(DISP_ADDR, display_buffer, sizeof(display_buffer));
 }
 
+void ssd1306_present_to(uint16_t count)
+{
+    cmd2(SSD1306_PAGEADDR, 0x00, 0xFF);
+    cmd2(SSD1306_COLUMNADDR, 0x00, WIDTH - 1);
+    uint8_t start_data[1] = {0x40};
+    i2c_write_nostop(DISP_ADDR, &start_data[0], 1);
+    i2c_write_cont(DISP_ADDR, display_buffer, count);
+}
+
 void ssd1306_sleep(void)
 {
     cmd(SSD1306_DISPLAYOFF);
